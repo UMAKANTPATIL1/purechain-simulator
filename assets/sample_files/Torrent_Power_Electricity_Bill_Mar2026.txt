@@ -1,0 +1,10 @@
+TORRENT POWER LTD / DGVCL - HT CONSUMER INVOICE
+Consumer No: 04-9821-4412-HTP1
+Consumer Name: Apex Green Metals Pvt Ltd
+Billing Period: 01-Mar-2026 to 31-Mar-2026
+Meter Multiplier: 1.0
+Active Energy Consumed (kWh): 15,200.00
+Maximum Demand (kVA): 140.0
+Power Factor: 0.98
+Current Bill Amount: INR 1,18,560.00
+Payment Status: PAID
