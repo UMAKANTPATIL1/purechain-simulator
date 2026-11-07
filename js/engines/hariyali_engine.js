@@ -31,7 +31,7 @@ class HariyaliEngine {
   getInitialMessage() {
     return {
       sender: "purechain",
-      text: `🌱 *Welcome to Purechain HARIYALI Carbon Accounting*\n\nI will help you calculate your business carbon footprint for Scope 1 (Direct Fuel), Scope 2 (Grid Electricity), and optional Supply Chain emissions in accordance with statutory GHG Protocol standards.\n\nLet's get started with your facility details.`,
+      text: `🌱 *Welcome to Purechain Carbon Accounting*\n\nI will help you calculate your business carbon footprint for Scope 1 (Direct Fuel), Scope 2 (Grid Electricity), and optional Supply Chain emissions in accordance with statutory GHG Protocol standards.\n\nLet's get started with your facility details.`,
       buttons: [
         { id: "btn_h_start", text: "Start Assessment" },
         { id: "btn_h_fast_track", text: "Fast-Track Demo Run" },
@@ -54,7 +54,7 @@ class HariyaliEngine {
     if (actionId === "btn_h_view_ytd") {
       return {
         sender: "purechain",
-        text: `📊 *Purechain HARIYALI — Cumulative FY 2025-26 Overview*\n\n🏢 Facility: *${s.company_name}*\n📍 Location: *${s.location}*\n\n• *Q1 (Apr–Jun 2025)*: 48.90 tCO₂e (Available)\n• *Q2 (Jul–Sep 2025)*: 51.20 tCO₂e (Available)\n• *Q3 (Oct–Dec 2025)*: 49.80 tCO₂e (Available)\n• *Q4 (Jan–Feb 2026)*: 33.40 tCO₂e (Available)\n• *March 2026*: In progress\n\nReady to finalize March 2026 accounting?`,
+        text: `📊 *Cumulative FY 2025-26 Overview*\n\n🏢 Facility: *${s.company_name}*\n📍 Location: *${s.location}*\n\n• *Q1 (Apr–Jun 2025)*: 48.90 tCO₂e (Available)\n• *Q2 (Jul–Sep 2025)*: 51.20 tCO₂e (Available)\n• *Q3 (Oct–Dec 2025)*: 49.80 tCO₂e (Available)\n• *Q4 (Jan–Feb 2026)*: 33.40 tCO₂e (Available)\n• *March 2026*: In progress\n\nReady to finalize March 2026 accounting?`,
         buttons: [
           { id: "btn_h_start", text: "Continue March 2026" }
         ],
@@ -225,7 +225,7 @@ class HariyaliEngine {
         if (actionId === "btn_h_download_report") {
           return {
             sender: "purechain",
-            text: `📄 *Purechain HARIYALI — Statutory GHG Report Generated*\n\nYour verified GHG assessment report for *${s.month}* is ready. It has been formatted in accordance with the GHG Protocol Corporate Standard.\n\n[Click below to preview or download PDF/DOCX]`,
+            text: `📄 *Statutory GHG Assessment Report Ready*\n\nYour verified GHG assessment report for *${s.month}* is ready. It has been formatted in accordance with the GHG Protocol Corporate Standard.\n\n[Click below to preview or download PDF/DOCX]`,
             buttons: [
               { id: "btn_h_open_pdf_modal", text: "👁️ Preview GHG Report PDF" },
               { id: "btn_h_view_breakdown", text: "📊 View Math Breakdown" },
@@ -365,7 +365,7 @@ ${res.production_tonnes > 0 ? `🎯 *Carbon Intensity: ${res.carbon_intensity_tc
     const s = this.state;
     const res = s.calculation_result || HARIYALI_DATA.calculate(s);
 
-    const text = `🔬 *Purechain HARIYALI — Calculation Math & Audit Trace*
+    const text = `🔬 *Calculation Math & Audit Trace*
 
 1️⃣ *Scope 1 Direct Combustion Math:*
 • Fuel: High Speed Diesel (HSD)

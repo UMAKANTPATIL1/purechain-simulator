@@ -33,7 +33,7 @@ class BRSREngine {
   getInitialMessage() {
     return {
       sender: "purechain",
-      text: `🌿 *Welcome to Purechain BRSR Value Chain Assist*\n\nWe help your company prepare verified sustainability disclosures for SEBI BRSR Core compliance (Principle 6: Environmental Disclosures).\n\nPlease choose an option to get started:`,
+      text: `🌿 *Welcome to BRSR Sustainability Reporting*\n\nI will help your company prepare verified environmental disclosures for SEBI BRSR Core compliance (Principle 6).\n\nPlease choose an option to get started:`,
       buttons: [
         { id: "btn_brsr_new", text: "Start New Assessment" },
         { id: "btn_brsr_continue", text: "Continue Existing" },
@@ -443,7 +443,7 @@ We will ask only for the specific indicators and disclosures that are unavailabl
     const s = this.state;
     const res = s.calculation_result || BRSR_DATA.calculate(s.level, s.missing_data);
 
-    const text = `🔬 *Purechain BRSR — Phase 4.7.1 Mathematical Reconciliation Trace*
+    const text = `🔬 *Mathematical Reconciliation Trace (SEBI BRSR Core)*
 
 1️⃣ *Scope 1 Discrepancy Resolution (CO₂ vs CO₂e):*
 • Stated Activity ($Q$): ${res.scope1.quantity_litres.toLocaleString()} Litres of HSD

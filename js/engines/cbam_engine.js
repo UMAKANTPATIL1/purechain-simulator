@@ -49,10 +49,9 @@ class CBAMEngine {
   getInitialMessage() {
     return {
       sender: "purechain",
-      text: `⚖️ *Purechain CBAM Compliance & Assessment Service*\n\nWelcome to the automated EU CBAM accounting & reporting assistant (Regulation EU 2023/956 & Annex III).\n\nLet's get started with your transaction role:`,
+      text: `⚖️ *Welcome to CBAM Assessment*\n\nI will assist you in calculating product-level embedded emissions and preparing your statutory declaration package (Regulation EU 2023/956 & Annex III).\n\nLet's get started with your installation assessment:`,
       buttons: [
-        { id: "btn_cbam_role_producer", text: "Non-EU Producer" },
-        { id: "btn_cbam_role_importer", text: "EU Importer" },
+        { id: "btn_cbam_role_producer", text: "Start Assessment" },
         { id: "btn_cbam_fast_track", text: "⚡ Fast-Track Demo Run" }
       ],
       step: "ENTRY"
@@ -74,7 +73,7 @@ class CBAMEngine {
 
     switch (s.step) {
       case "ENTRY":
-        s.role = (actionId === "btn_cbam_role_importer") ? "importer" : "producer";
+        s.role = "producer";
         s.step = "INSTALLATION";
         return {
           sender: "purechain",
@@ -448,7 +447,7 @@ ${bioSummaryLine}
     const s = this.state;
     const res = s.calculation_result || CBAM_DATA.calculate({ ...s, biomass_verifier_status: s.biomass_status });
 
-    const text = `🔬 *Purechain CBAM — Calculation Math & Statutory Equation Trace*
+    const text = `🔬 *CBAM Calculation Math & Statutory Equation Trace*
 
 1️⃣ *Direct Emissions Equation (Annex III Section 3 & Guidance 3 Eq 55):*
 $$DirEm_{net} = DirEm_{gross} - BioCredit + (Heat_{imp} - Heat_{exp}) + (WG_{imp} - WG_{exp})$$
@@ -489,7 +488,7 @@ $$SEE = \\frac{TotalEmbeddedEmissions}{ProductionQuantity} = \\frac{${res.total_
     const s = this.state;
     const res = s.calculation_result || CBAM_DATA.calculate({ ...s, biomass_verifier_status: s.biomass_status });
 
-    const text = `📈 *Purechain CBAM — Quarterly Financial Exposure & Scenario Analysis*
+    const text = `📈 *Quarterly Financial Exposure & Scenario Analysis*
 
 📅 *2026 Quarterly Certificate Price Projections:*
 • *Q1 2026*: 300 t exposure @ €68.50/t = *€20,550.00*

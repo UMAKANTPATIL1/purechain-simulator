@@ -1,5 +1,6 @@
 /**
  * Purechain AI — Master WhatsApp Presentation Simulator Controller
+ * Client-facing presentation coordinator with zero internal agent names.
  */
 
 class PurechainSimulatorApp {
@@ -48,11 +49,14 @@ class PurechainSimulatorApp {
       }
     });
 
-    // Close mobile drawer if open
-    const sidebarEl = document.getElementById("appSidebar");
-    if (sidebarEl) sidebarEl.classList.remove("mobile-open");
+    // Mobile single-screen layout: show chat view
+    const appContainer = document.getElementById("appContainer");
+    if (appContainer) {
+      appContainer.classList.remove("view-sidebar");
+      appContainer.classList.add("view-chat");
+    }
 
-    // Update header details
+    // Update header details with natural client-facing copy
     this.updateHeader(workflowName);
 
     // Clear and load initial conversation
@@ -66,7 +70,7 @@ class PurechainSimulatorApp {
         window.chatView.showTyping(false);
         window.chatView.appendMessage(initialMsg);
         this.updateProgressBanner();
-      }, 500);
+      }, 450);
     } else {
       window.chatView.appendMessage(initialMsg, false);
       this.updateProgressBanner();
@@ -80,19 +84,19 @@ class PurechainSimulatorApp {
 
     const titles = {
       HARIYALI: {
-        title: "Purechain AI — HARIYALI",
-        subtitle: "Common Carbon Activity & Scope 1/2 Accounting • Verified",
-        banner: "HARIYALI Carbon Accounting Journey",
+        title: "Purechain AI",
+        subtitle: "Carbon Accounting • Verified",
+        banner: "Carbon Footprint Accounting",
       },
       CBAM: {
-        title: "Purechain AI — EU CBAM",
-        subtitle: "Product-Level Embedded Emissions & Template T-5 • Verified",
-        banner: "EU CBAM Statutory Attribution Journey",
+        title: "Purechain AI",
+        subtitle: "CBAM Assessment • Verified",
+        banner: "EU CBAM Compliance Assessment",
       },
       BRSR: {
-        title: "Purechain AI — SEBI BRSR Core",
-        subtitle: "Principle 6 Disclosures & Reconciled GHG Statement • Verified",
-        banner: "SEBI BRSR Core Environmental Disclosures Journey",
+        title: "Purechain AI",
+        subtitle: "BRSR Disclosures • Verified",
+        banner: "SEBI BRSR Core Disclosures",
       }
     };
 
@@ -108,24 +112,68 @@ class PurechainSimulatorApp {
     const progressTextEl = document.getElementById("workflowProgressText");
     const progressFillEl = document.getElementById("workflowProgressFill");
 
-    let stepLabel = s.step;
+    // Human-friendly step mappings (Zero technical or internal state-machine names exposed)
+    const stepNames = {
+      HARIYALI: {
+        WELCOME: "Onboarding",
+        LOCATION: "Facility Details",
+        PERIOD: "Reporting Period",
+        FUEL: "Scope 1 Fuel",
+        ELECTRICITY: "Scope 2 Electricity",
+        PRODUCTION: "Production Output",
+        SCOPE3: "Supply Chain",
+        CONFLICT: "Data Verification",
+        SUMMARY: "Confirmation Review",
+        RESULT: "Assessment Results",
+        REPORT_READY: "Report Prepared",
+      },
+      CBAM: {
+        ENTRY: "Role Selection",
+        INSTALLATION: "Facility Identification",
+        PERIOD: "Reporting Period",
+        PRODUCT_CN: "Product & CN Code",
+        ROUTE_QUANTITY: "Production Quantity",
+        EXPORT_DEST: "EU Export Consignment",
+        DIRECT_EMISSIONS: "Direct Emissions",
+        PFC_EVALUATION: "PFC Verification",
+        ELECTRICITY: "Indirect Emissions",
+        ENERGY_TRANSFERS: "Energy Transfers (Eq 55)",
+        BIOMASS: "Biomass Verification",
+        PRECURSORS: "Precursor Attribution",
+        CARBON_PRICE: "Carbon Price Credit",
+        REVIEW: "Final Assessment Review",
+        RESULT: "CBAM Results",
+        REPORT_READY: "Template T-5 Prepared",
+      },
+      BRSR: {
+        WELCOME: "Onboarding",
+        FY_SELECT: "Period Selection",
+        FY_CONFIRM: "Period Confirmation",
+        LEVEL_SELECT: "Reporting Boundary",
+        INSTALLATION_SELECT: "Facility Selection",
+        REVIEW_EXISTING: "Monthly Coverage Review",
+        WATER_INPUT: "Water Disclosures",
+        WASTE_INPUT: "Waste Metrics",
+        DISCLOSURES: "Principle 6 Disclosures",
+        CONSOLIDATED_REVIEW: "Consolidated Review",
+        RESULT: "BRSR Core Results",
+        REPORT_READY: "SEBI Statement Prepared",
+      }
+    };
+
+    let stepLabel = "In progress";
     let pct = 10;
 
-    if (this.currentWorkflow === "HARIYALI") {
-      const stepOrder = ["WELCOME", "LOCATION", "PERIOD", "FUEL", "ELECTRICITY", "PRODUCTION", "SCOPE3", "CONFLICT", "SUMMARY", "RESULT", "REPORT_READY"];
-      const idx = stepOrder.indexOf(s.step);
+    const currentMap = stepNames[this.currentWorkflow] || {};
+    const stepOrder = Object.keys(currentMap);
+    const friendlyName = currentMap[s.step] || "Assessment Details";
+
+    const idx = stepOrder.indexOf(s.step);
+    if (idx !== -1) {
       pct = Math.max(10, Math.round(((idx + 1) / stepOrder.length) * 100));
-      stepLabel = `Step ${Math.max(1, idx + 1)} of ${stepOrder.length}: ${s.step}`;
-    } else if (this.currentWorkflow === "CBAM") {
-      const stepOrder = ["ENTRY", "INSTALLATION", "PERIOD", "PRODUCT_CN", "ROUTE_QUANTITY", "EXPORT_DEST", "DIRECT_EMISSIONS", "PFC_EVALUATION", "ELECTRICITY", "ENERGY_TRANSFERS", "BIOMASS", "PRECURSORS", "CARBON_PRICE", "REVIEW", "RESULT", "REPORT_READY"];
-      const idx = stepOrder.indexOf(s.step);
-      pct = Math.max(10, Math.round(((idx + 1) / stepOrder.length) * 100));
-      stepLabel = `Step ${Math.max(1, idx + 1)} of ${stepOrder.length}: ${s.step}`;
-    } else if (this.currentWorkflow === "BRSR") {
-      const stepOrder = ["WELCOME", "FY_SELECT", "FY_CONFIRM", "LEVEL_SELECT", "INSTALLATION_SELECT", "REVIEW_EXISTING", "WATER_INPUT", "WASTE_INPUT", "DISCLOSURES", "CONSOLIDATED_REVIEW", "RESULT", "REPORT_READY"];
-      const idx = stepOrder.indexOf(s.step);
-      pct = Math.max(10, Math.round(((idx + 1) / stepOrder.length) * 100));
-      stepLabel = `Step ${Math.max(1, idx + 1)} of ${stepOrder.length}: ${s.step}`;
+      stepLabel = `Step ${idx + 1} of ${stepOrder.length}: ${friendlyName}`;
+    } else {
+      stepLabel = friendlyName;
     }
 
     if (progressTextEl) progressTextEl.innerText = stepLabel;
@@ -153,7 +201,7 @@ class PurechainSimulatorApp {
         window.chatView.appendMessage(response);
       }
       this.updateProgressBanner();
-    }, 600);
+    }, 550);
   }
 
   handleDocumentUploaded(doc) {
@@ -169,7 +217,7 @@ class PurechainSimulatorApp {
       const response = engine.triggerDocumentDemonstration(doc.id, nextStep);
       window.chatView.appendMessage(response);
       this.updateProgressBanner();
-    }, 700);
+    }, 600);
   }
 
   restartCurrentWorkflow() {

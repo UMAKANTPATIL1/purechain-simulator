@@ -2,14 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Purechain AI — Interactive WhatsApp Presentation Simulator (HARIYALI + CBAM + BRSR)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Purechain AI — Interactive WhatsApp Presentation Simulator</title>
   <link rel="stylesheet" href="css/whatsapp.css">
   <link rel="stylesheet" href="css/presentation.css">
 </head>
 <body>
 
-  <div class="app-container" id="appContainer">
+  <!-- App Master Container: on mobile, alternates between .view-chat and .view-sidebar -->
+  <div class="app-container view-chat" id="appContainer">
 
     <!-- WhatsApp Left Sidebar: Conversation / Workflow Selector -->
     <aside class="app-sidebar" id="appSidebar">
@@ -19,7 +20,7 @@
           <div class="brand-avatar">🌿</div>
           <div class="brand-text">
             <h1>Purechain AI</h1>
-            <span class="brand-badge">WhatsApp Simulator</span>
+            <span class="brand-badge">Verified Assistant</span>
           </div>
         </div>
         <div class="sidebar-actions">
@@ -32,7 +33,7 @@
       <div class="sidebar-tools">
         <div class="search-box">
           <span class="search-icon">🔍</span>
-          <input type="text" id="workflowSearch" placeholder="Search workflows or messages" readonly value="Purechain Verified Modules">
+          <input type="text" id="workflowSearch" placeholder="Search conversations" readonly value="Verified Compliance Workflows">
         </div>
 
         <div class="demo-control-bar">
@@ -43,27 +44,27 @@
 
       <!-- Workflow Conversations List -->
       <ul class="workflow-tab-list" id="workflowTabList">
-        <!-- 1. HARIYALI -->
+        <!-- 1. Carbon Accounting (HARIYALI) -->
         <li class="workflow-tab-item active" data-workflow="HARIYALI">
-          <div class="wf-icon-circle hariyali">🌱</div>
+          <div class="wf-icon-circle">🌱</div>
           <div class="wf-details">
             <div class="wf-title-row">
-              <h3>HARIYALI Carbon</h3>
+              <h3>Carbon Accounting</h3>
               <span class="wf-time">10:14 AM</span>
             </div>
             <div class="wf-preview-row">
               <span class="wf-snippet">Scope 1 & 2 • Fuel, Electricity, CEA v22.0</span>
-              <span class="wf-badge">Active</span>
+              <span class="wf-badge">GHG Protocol</span>
             </div>
           </div>
         </li>
 
-        <!-- 2. CBAM -->
+        <!-- 2. CBAM Assessment -->
         <li class="workflow-tab-item" data-workflow="CBAM">
-          <div class="wf-icon-circle cbam">⚖️</div>
+          <div class="wf-icon-circle">⚖️</div>
           <div class="wf-details">
             <div class="wf-title-row">
-              <h3>EU CBAM Assessment</h3>
+              <h3>CBAM Assessment</h3>
               <span class="wf-time">09:48 AM</span>
             </div>
             <div class="wf-preview-row">
@@ -73,12 +74,12 @@
           </div>
         </li>
 
-        <!-- 3. BRSR -->
+        <!-- 3. BRSR Disclosures -->
         <li class="workflow-tab-item" data-workflow="BRSR">
-          <div class="wf-icon-circle brsr">🇮🇳</div>
+          <div class="wf-icon-circle">🇮🇳</div>
           <div class="wf-details">
             <div class="wf-title-row">
-              <h3>SEBI BRSR Core</h3>
+              <h3>BRSR Disclosures</h3>
               <span class="wf-time">Yesterday</span>
             </div>
             <div class="wf-preview-row">
@@ -91,7 +92,7 @@
 
       <!-- Sidebar Footer -->
       <div class="sidebar-footer">
-        Purechain AI Presentation Environment • Zero Route Modifications
+        Purechain AI Presentation Environment • Standalone Client Simulator
       </div>
     </aside>
 
@@ -101,19 +102,20 @@
       <!-- Chat Header -->
       <header class="chat-header">
         <div class="chat-header-profile">
-          <button class="icon-btn mobile-menu-btn" id="mobileMenuBtn">☰</button>
+          <!-- Back button: visible on mobile to return to conversations list -->
+          <button class="mobile-back-btn" id="mobileBackBtn" title="Back to conversations">←</button>
           <div class="profile-avatar" id="headerAvatar">🌿</div>
           <div class="profile-info">
-            <h2 id="headerTitle">Purechain AI — HARIYALI</h2>
+            <h2 id="headerTitle">Purechain AI</h2>
             <div class="profile-status">
-              <span id="headerStatus">online</span> • <span id="headerSubtitle">Common Carbon Activity & Scope 1/2 Accounting</span>
+              <span id="headerStatus">online</span> • <span id="headerSubtitle">Carbon Accounting • Verified</span>
             </div>
           </div>
         </div>
 
         <div class="chat-header-controls">
-          <button class="btn-header-action" id="attachDocBtn">
-            <span>📎</span> Upload Document
+          <button class="btn-header-action" id="attachDocBtn" title="Upload Document">
+            <span class="btn-icon">📎</span> <span>Upload Document</span>
           </button>
         </div>
       </header>
@@ -121,8 +123,8 @@
       <!-- Workflow Progress Tracker Bar -->
       <div class="workflow-progress-banner">
         <div class="progress-info">
-          <strong id="workflowBannerTitle">HARIYALI Carbon Accounting Journey</strong>
-          <span id="workflowProgressText">Step 1 of 11: Welcome</span>
+          <strong id="workflowBannerTitle">Carbon Accounting Assessment</strong>
+          <span id="workflowProgressText">Step 1 of 11: Facility Details</span>
         </div>
         <div class="progress-bar-container">
           <div class="progress-bar-fill" id="workflowProgressFill" style="width: 10%"></div>
@@ -136,22 +138,22 @@
       </div>
 
       <!-- Typing Indicator (Floating / In-flow) -->
-      <div class="typing-bubble hidden" id="typingIndicator" style="position: absolute; bottom: 74px; left: 40px; z-index: 5;">
+      <div class="typing-bubble hidden" id="typingIndicator" style="position: absolute; bottom: 74px; left: 24px; z-index: 5;">
         <span class="typing-dot"></span>
         <span class="typing-dot"></span>
         <span class="typing-dot"></span>
       </div>
 
-      <!-- Chat Input Footer -->
+      <!-- Chat Input Composer -->
       <footer class="chat-footer">
         <button class="footer-btn" title="Emoji">😊</button>
         <button class="footer-btn" id="attachDocFooterBtn" onclick="document.getElementById('attachDocBtn').click()" title="Attach Document">📎</button>
 
-        <div class="input-container">
-          <input type="text" class="message-input" id="messageInput" placeholder="Type a message or select an option above...">
+        <div class="input-container disabled">
+          <input type="text" class="message-input" id="messageInput" placeholder="Please select an option above to continue..." disabled readonly>
         </div>
 
-        <button class="footer-btn send-btn" id="sendMessageBtn" title="Send Message">➤</button>
+        <button class="footer-btn send-btn disabled" id="sendMessageBtn" title="Send Message" disabled>➤</button>
       </footer>
 
     </main>

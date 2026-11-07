@@ -1,5 +1,6 @@
 /**
  * Purechain AI — Simulator Controls & Presentation Mode
+ * Touch-friendly responsive controls & navigation.
  */
 
 class Controls {
@@ -10,14 +11,30 @@ class Controls {
   }
 
   initEventListeners() {
+    const appContainer = document.getElementById("appContainer");
+
     // Workflow tabs in sidebar
     const tabs = document.querySelectorAll(".workflow-tab-item");
     tabs.forEach(tab => {
       tab.addEventListener("click", () => {
         const wf = tab.getAttribute("data-workflow");
         this.app.switchWorkflow(wf);
+        // Switch to chat view on mobile
+        if (appContainer) {
+          appContainer.classList.remove("view-sidebar");
+          appContainer.classList.add("view-chat");
+        }
       });
     });
+
+    // Mobile back button (returns to conversations sidebar)
+    const mobileBackBtn = document.getElementById("mobileBackBtn");
+    if (mobileBackBtn && appContainer) {
+      mobileBackBtn.addEventListener("click", () => {
+        appContainer.classList.remove("view-chat");
+        appContainer.classList.add("view-sidebar");
+      });
+    }
 
     // Presentation mode button
     const presBtn = document.getElementById("togglePresentationBtn");
@@ -42,7 +59,7 @@ class Controls {
     if (audioBtn) {
       audioBtn.addEventListener("click", () => {
         window.chatView.soundEnabled = !window.chatView.soundEnabled;
-        audioBtn.innerText = window.chatView.soundEnabled ? "🔊 Sound On" : "🔇 Sound Off";
+        audioBtn.innerText = window.chatView.soundEnabled ? "🔊" : "🔇";
       });
     }
 
@@ -61,32 +78,22 @@ class Controls {
     const sendBtn = document.getElementById("sendMessageBtn");
 
     if (sendBtn && msgInput) {
-      sendBtn.addEventListener("click", () => {
+      const handleSend = () => {
+        if (msgInput.disabled) return;
         const val = msgInput.value.trim();
         if (val) {
           msgInput.value = "";
           this.app.handleUserInteraction(null, val);
         }
-      });
+      };
+
+      sendBtn.addEventListener("click", handleSend);
 
       msgInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault();
-          const val = msgInput.value.trim();
-          if (val) {
-            msgInput.value = "";
-            this.app.handleUserInteraction(null, val);
-          }
+          handleSend();
         }
-      });
-    }
-
-    // Mobile sidebar toggle
-    const mobileMenuBtn = document.getElementById("mobileMenuBtn");
-    const sidebarEl = document.getElementById("appSidebar");
-    if (mobileMenuBtn && sidebarEl) {
-      mobileMenuBtn.addEventListener("click", () => {
-        sidebarEl.classList.toggle("mobile-open");
       });
     }
   }
@@ -98,10 +105,10 @@ class Controls {
 
     if (this.isPresentationMode) {
       appContainer.classList.add("presentation-mode");
-      if (presBtn) presBtn.innerHTML = "📺 Exit Presentation";
+      if (presBtn) presBtn.title = "Exit Presentation Mode";
     } else {
       appContainer.classList.remove("presentation-mode");
-      if (presBtn) presBtn.innerHTML = "📺 Presentation Mode";
+      if (presBtn) presBtn.title = "Presentation Mode";
     }
   }
 }
