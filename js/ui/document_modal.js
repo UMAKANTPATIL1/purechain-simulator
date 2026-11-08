@@ -119,14 +119,17 @@ class DocumentModal {
     }
   }
 
-  showReportPreview(type, data) {
+  showReportPreview(type, data, mode = "ALL_AVAILABLE") {
     let title = "Statutory Report Preview";
     let reportHtml = "";
 
     if (type === "HARIYALI") {
-      title = "GHG Assessment Report (ISO 14064 / GHG Protocol)";
+      const isAll = (mode === "ALL_AVAILABLE");
+      title = isAll
+        ? "Consolidated HARIYALI GHG Emissions Report (All Available Data)"
+        : `HARIYALI GHG Emissions Report (${data.month || 'Current Calculation'})`;
       const res = data.calculation_result || HARIYALI_DATA.calculate(data);
-      reportHtml = this.buildHariyaliReportHtml(data, res);
+      reportHtml = this.buildHariyaliReportHtml(data, res, mode);
     } else if (type === "CBAM") {
       title = "EU CBAM Communication Template T-5 (Regulation EU 2023/956)";
       const res = data.calculation_result || CBAM_DATA.calculate(data);
@@ -140,14 +143,46 @@ class DocumentModal {
     this.open(title, reportHtml);
   }
 
-  buildHariyaliReportHtml(state, res) {
+  buildHariyaliReportHtml(state, res, mode = "ALL_AVAILABLE") {
+    const isAll = (mode === "ALL_AVAILABLE");
+    const months = HARIYALI_DATA.confirmed_months;
+    const currentMonth = state.month || "November 2025";
+
+    let monthlyRowsHtml = "";
+    let consolidatedTotal = 0;
+    if (isAll) {
+      months.forEach(m => {
+        consolidatedTotal += m.footprint_tco2e;
+        monthlyRowsHtml += `
+          <tr>
+            <td><strong>${m.display}</strong></td>
+            <td>${m.diesel_litres.toLocaleString()} L</td>
+            <td>${m.electricity_kwh.toLocaleString()} kWh</td>
+            <td>${m.production_tonnes} t</td>
+            <td><strong>${m.footprint_tco2e.toFixed(2)} tCO₂e</strong></td>
+          </tr>
+        `;
+      });
+      // Add current calculated month
+      consolidatedTotal += res.total_emissions_tco2e;
+      monthlyRowsHtml += `
+        <tr style="background-color: rgba(0, 168, 132, 0.08);">
+          <td><strong>${currentMonth} (Current)</strong></td>
+          <td>${res.scope1.quantity.toLocaleString()} L</td>
+          <td>${res.scope2.quantity.toLocaleString()} kWh</td>
+          <td>${res.production_tonnes} t</td>
+          <td><strong>${res.total_emissions_tco2e.toFixed(2)} tCO₂e</strong></td>
+        </tr>
+      `;
+    }
+
     return `
       <div class="report-paper">
         <div class="report-header">
           <div class="report-brand">
             <span class="report-badge">🌱 PURECHAIN CARBON</span>
             <h2>GREENHOUSE GAS EMISSIONS ASSESSMENT REPORT</h2>
-            <div class="report-sub">Compliant with GHG Protocol Corporate Standard & ISO 14064-1</div>
+            <div class="report-sub">${isAll ? 'Consolidated Assessment (All Available Monthly Records)' : 'Statement of Current Calculation Execution'} • GHG Protocol & ISO 14064-1</div>
           </div>
           <div class="report-qr">
             <div class="qr-box">VERIFIED<br>REPORT</div>
@@ -156,14 +191,38 @@ class DocumentModal {
 
         <div class="report-meta-grid">
           <div><strong>Company:</strong> ${state.company_name}</div>
-          <div><strong>Assessment ID:</strong> PC-GHG-2026-03-${Math.floor(1000 + Math.random()*9000)}</div>
-          <div><strong>Facility:</strong> ${state.location}</div>
-          <div><strong>Reporting Period:</strong> ${state.month}</div>
-          <div><strong>Product Output:</strong> ${state.production_tonnes} tonnes of ${state.product_name}</div>
+          <div><strong>Assessment ID:</strong> PC-GHG-2025-26-${Math.floor(1000 + Math.random()*9000)}</div>
+          <div><strong>Facility:</strong> ${state.facility_name || state.location}</div>
+          <div><strong>Reporting Period:</strong> ${state.reporting_period || 'FY 2025–26'}</div>
+          <div><strong>Coverage Mode:</strong> ${isAll ? 'All Available Monthly Data' : 'Current Month Only (' + currentMonth + ')'}</div>
           <div><strong>Generated Date:</strong> ${new Date().toLocaleDateString('en-GB')}</div>
         </div>
 
-        <h3>1. Carbon Footprint Summary</h3>
+        ${isAll ? `
+        <h3>1. Multi-Month Activity & Emissions Ledger</h3>
+        <div class="report-table-wrapper">
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>Activity Month</th>
+                <th>Scope 1 (Diesel)</th>
+                <th>Scope 2 (Electricity)</th>
+                <th>Production</th>
+                <th>Emissions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${monthlyRowsHtml}
+              <tr class="total-row">
+                <td colspan="4"><strong>CONSOLIDATED CUMULATIVE TOTAL</strong></td>
+                <td><strong>${consolidatedTotal.toFixed(2)} tCO₂e</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        ` : ''}
+
+        <h3>${isAll ? '2. Current Month Activity Details (' + currentMonth + ')' : '1. Calculation Breakdown (' + currentMonth + ')'}</h3>
         <div class="report-table-wrapper">
           <table class="report-table">
             <thead>
@@ -193,20 +252,20 @@ class DocumentModal {
               ${res.scope3 ? `
               <tr>
                 <td><strong>Scope 3 (Supply Chain)</strong></td>
-                <td>Upstream Freight Transport</td>
+                <td>Upstream Freight Logistics</td>
                 <td>₹${res.scope3.spend_inr.toLocaleString()}</td>
                 <td>Spend-based GWP</td>
                 <td><strong>${res.scope3.emissions_tco2e.toFixed(4)}</strong></td>
               </tr>` : ''}
               <tr class="total-row">
-                <td colspan="4"><strong>TOTAL CARBON FOOTPRINT</strong></td>
+                <td colspan="4"><strong>TOTAL (${currentMonth.toUpperCase()})</strong></td>
                 <td><strong>${res.total_emissions_tco2e.toFixed(4)} tCO₂e</strong></td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <h3>2. Intensity Metrics</h3>
+        <h3>${isAll ? '3. Intensity & Verification Metrics' : '2. Intensity Metrics'}</h3>
         <div class="kpi-boxes">
           <div class="kpi-box">
             <span class="kpi-val">${res.carbon_intensity_tco2e_per_tonne.toFixed(4)}</span>
@@ -214,16 +273,16 @@ class DocumentModal {
           </div>
           <div class="kpi-box">
             <span class="kpi-val">${Math.round(res.total_emissions_kg).toLocaleString()}</span>
-            <span class="kpi-lbl">Total kg CO₂e</span>
+            <span class="kpi-lbl">Total kg CO₂e (${currentMonth})</span>
           </div>
           <div class="kpi-box">
             <span class="kpi-val">100%</span>
-            <span class="kpi-lbl">Audit Provenance Score</span>
+            <span class="kpi-lbl">Statutory Compliance</span>
           </div>
         </div>
 
         <div class="report-actions">
-          <button class="btn-download" onclick="window.documentModal.downloadMockFile('Purechain_GHG_Carbon_Report.pdf')">📥 Download PDF Report</button>
+          <button class="btn-download" onclick="window.documentModal.downloadMockFile('${isAll ? 'Purechain_HARIYALI_GHG_Report_All_Available.pdf' : 'Purechain_HARIYALI_GHG_Report_Current.pdf'}')">📥 Download PDF Report</button>
           <button class="btn-secondary" onclick="window.print()">🖨️ Print</button>
         </div>
       </div>

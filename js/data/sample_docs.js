@@ -6,7 +6,7 @@
 const SAMPLE_DOCS = [
   {
     id: "doc_elec_mar2026",
-    name: "Torrent_Power_Electricity_Bill_Mar2026.pdf",
+    name: "Torrent_Power_Electricity_Bill_Nov2025.pdf",
     type: "PDF",
     size: "284 KB",
     icon: "📄",
@@ -18,7 +18,7 @@ const SAMPLE_DOCS = [
       raw_table_header: "Billed Units / Total kWh Consumed",
       extracted_value: 15200.0,
       unit: "kWh",
-      reporting_period: "March 2026",
+      reporting_period: "November 2025",
       source_reference: "Page 1, Table 2 (Meter Multiplier 1.0)",
       consumer_id: "04-9821-4412-HTP1",
       confidence: "99.2%",
@@ -41,7 +41,7 @@ const SAMPLE_DOCS = [
       raw_table_header: "Quantity Dispatched (Ltrs)",
       extracted_value: 2600.0,
       unit: "Litres",
-      reporting_period: "March 2026",
+      reporting_period: "November 2025",
       source_reference: "Tax Invoice Line Item 1",
       density: "0.840 kg/L @ 15°C",
       confidence: "98.9%",

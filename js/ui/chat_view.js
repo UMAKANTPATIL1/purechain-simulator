@@ -122,11 +122,30 @@ class ChatView {
       `;
     }
 
+    let docCardHtml = "";
+    if (msg.document) {
+      const docType = msg.document.type || "HARIYALI";
+      const docMode = msg.document.mode || "ALL_AVAILABLE";
+      docCardHtml = `
+        <div class="whatsapp-doc-card" style="cursor: pointer;" onclick="window.documentModal.showReportPreview('${docType}', window.hariyaliEngine.state, '${docMode}')">
+          <div class="doc-header">
+            <div class="doc-icon-badge">📄</div>
+            <div class="doc-meta-info">
+              <div class="doc-title">${msg.document.filename}</div>
+              <div class="doc-subtitle">${msg.document.size || '342 KB'} • PDF • Click to preview</div>
+            </div>
+            <button class="btn-select-doc">Preview</button>
+          </div>
+        </div>
+      `;
+    }
+
     const readReceipt = isPurechain ? "" : '<span class="read-receipt">✓✓</span>';
 
     bubble.innerHTML = `
       <div class="bubble-content">
-        ${this.formatMarkdown(msg.text)}
+        ${docCardHtml}
+        ${msg.text ? this.formatMarkdown(msg.text) : ''}
       </div>
       <div class="bubble-meta">
         <span class="message-time">${timeStr}</span>

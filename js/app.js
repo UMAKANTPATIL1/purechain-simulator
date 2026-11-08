@@ -115,17 +115,21 @@ class PurechainSimulatorApp {
     // Human-friendly step mappings (Zero technical or internal state-machine names exposed)
     const stepNames = {
       HARIYALI: {
-        WELCOME: "Onboarding",
-        LOCATION: "Facility Details",
-        PERIOD: "Reporting Period",
-        FUEL: "Scope 1 Fuel",
-        ELECTRICITY: "Scope 2 Electricity",
-        PRODUCTION: "Production Output",
-        SCOPE3: "Supply Chain",
+        FACILITY_SELECT: "Facility Resolution",
+        REGISTRATION: "Facility Registration",
+        PERIOD_SELECT: "Reporting Period",
+        MONTHLY_OVERVIEW: "Monthly Activity Overview",
+        RECORD_VIEW: "Monthly Record Review",
+        YTD_VIEW: "Cumulative YTD Overview",
+        COLLECTING: "Activity Data Collection",
+        FUEL_INPUT: "Scope 1 Fuel Combustion",
+        ELECTRICITY_INPUT: "Scope 2 Grid Electricity",
         CONFLICT: "Data Verification",
-        SUMMARY: "Confirmation Review",
+        PRODUCTION_INPUT: "Production Output",
+        SCOPE3_OFFER: "Supply Chain Offer",
+        CONFIRMATION: "Confirmation Review",
         RESULT: "Assessment Results",
-        REPORT_READY: "Report Prepared",
+        REPORT_DELIVERY: "Statutory Report Delivered",
       },
       CBAM: {
         ENTRY: "Role Selection",
@@ -198,16 +202,25 @@ class PurechainSimulatorApp {
       const engine = this.getActiveEngine();
       const response = engine.handleUserAction(buttonId, text);
       if (response) {
-        window.chatView.appendMessage(response);
+        if (Array.isArray(response)) {
+          response.forEach((r, idx) => {
+            setTimeout(() => {
+              window.chatView.appendMessage(r);
+              this.updateProgressBanner();
+            }, idx * 400);
+          });
+        } else {
+          window.chatView.appendMessage(response);
+          this.updateProgressBanner();
+        }
       }
-      this.updateProgressBanner();
     }, 550);
   }
 
   handleDocumentUploaded(doc) {
     const engine = this.getActiveEngine();
-    let nextStep = "SUMMARY";
-    if (this.currentWorkflow === "HARIYALI") nextStep = doc.extracted_data.has_conflict ? "CONFLICT" : "PRODUCTION";
+    let nextStep = "CONFIRMATION";
+    if (this.currentWorkflow === "HARIYALI") nextStep = doc.extracted_data.has_conflict ? "CONFLICT" : "PRODUCTION_INPUT";
     else if (this.currentWorkflow === "CBAM") nextStep = "CARBON_PRICE";
     else if (this.currentWorkflow === "BRSR") nextStep = "WASTE_INPUT";
 
