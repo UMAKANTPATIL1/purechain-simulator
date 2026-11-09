@@ -40,7 +40,7 @@ const PROCUREMENT_DATA = {
       location: "Pune, Maharashtra",
       gst_status: "Verified",
       past_performance: "New",
-      rakshak_status: "Verification unavailable",
+      rakshak_status: "GST verification unavailable (Demo)",
       daam_guru_status: null,
       match: "Onion",
       avatar: "🏬"
@@ -55,7 +55,7 @@ const PROCUREMENT_DATA = {
       location: "Dispur, Assam",
       gst_status: "Verified",
       past_performance: "Good",
-      rakshak_status: "Verified and active",
+      rakshak_status: "GST verified (Demo)",
       daam_guru_status: null,
       match: "Onion",
       avatar: "🏦"
@@ -70,7 +70,7 @@ const PROCUREMENT_DATA = {
       location: "Mumbai, Maharashtra",
       gst_status: "Verified",
       past_performance: "Good",
-      rakshak_status: "Verification unavailable",
+      rakshak_status: "GST verification unavailable (Demo)",
       daam_guru_status: null,
       match: "Onion",
       avatar: "🏭"
@@ -406,9 +406,9 @@ const PROCUREMENT_DATA = {
     const rfq = this.shared_store.current_rfq;
     if (!rfq) return null;
 
-    // Prevent duplicate submissions
+    // Prevent duplicate submissions unless explicitly updating or submitting a new reference/revision
     const existing = this.shared_store.supplier_assignments[supplierId];
-    if (existing && existing.status === "SUBMITTED") {
+    if (existing && existing.status === "SUBMITTED" && !quoteParams.allow_update && quoteParams.quotation_ref === (existing.quotation && existing.quotation.quotation_ref)) {
       return { duplicate: true, quotation: existing.quotation };
     }
 
@@ -416,6 +416,28 @@ const PROCUREMENT_DATA = {
     const suppNum = supplierId.replace("supplier_", "S");
     const randNum = Math.floor(1000 + Math.random() * 9000);
     const quoteRef = quoteParams.quotation_ref || `QT-2026-${suppNum}-${randNum}`;
+
+    // Normalize freight charges canonically (handles lump sum, per MT, per unit, and included)
+    const normFreight = this.normalizeFreight(quoteParams, rfq.quantity, rfq.unit);
+    const freightAmount = normFreight.freight_amount;
+    const freightDisplay = quoteParams.freight_display || normFreight.original_display || normFreight.display;
+
+    // Clear obsolete per-MT fields when lump-sum or included freight is selected
+    if (normFreight.freight_type === "lump_sum" || normFreight.freight_type === "included") {
+      delete quoteParams.freight_amount_per_mt;
+      delete quoteParams.freight_rate_per_mt;
+      delete quoteParams.is_per_mt;
+    } else if (normFreight.freight_type === "per_mt") {
+      quoteParams.freight_amount_per_mt = normFreight.freight_amount_per_mt || normFreight.rate_per_mt;
+      quoteParams.is_per_mt = true;
+    }
+
+    const baseAmount = quoteParams.base_amount !== undefined ? quoteParams.base_amount : (rfq.quantity * (quoteParams.unit_price_per_mt || 0));
+    const gstRate = quoteParams.gst_rate !== undefined ? quoteParams.gst_rate : quoteParams.gst_rate_percent;
+    const gstAmount = quoteParams.gst_amount !== undefined ? quoteParams.gst_amount : Math.round(((baseAmount || 0) * (gstRate || 0)) / 100);
+    const totalLandedAmount = quoteParams.total_landed_amount !== undefined && quoteParams.total_landed_amount === (baseAmount + gstAmount + freightAmount)
+      ? quoteParams.total_landed_amount
+      : (baseAmount + gstAmount + freightAmount);
 
     const quotation = {
       quotation_ref: quoteRef,
@@ -432,13 +454,18 @@ const PROCUREMENT_DATA = {
       unit_rate_display: quoteParams.unit_rate_display || quoteParams.unit_price_display,
       unit_price: quoteParams.unit_price || quoteParams.unit_price_per_mt || quoteParams.unit_rate_val,
       unit_price_display: quoteParams.unit_price_display || quoteParams.unit_rate_display,
-      base_amount: quoteParams.base_amount !== undefined ? quoteParams.base_amount : (rfq.quantity * (quoteParams.unit_price_per_mt || 0)),
+      base_amount: baseAmount,
       calc_breakdown: quoteParams.calc_breakdown || quoteParams.calc_str || "",
-      gst_rate: quoteParams.gst_rate !== undefined ? quoteParams.gst_rate : quoteParams.gst_rate_percent,
-      gst_amount: quoteParams.gst_amount !== undefined ? quoteParams.gst_amount : Math.round(((quoteParams.base_amount || 0) * (quoteParams.gst_rate !== undefined ? quoteParams.gst_rate : (quoteParams.gst_rate_percent || 0))) / 100),
-      freight_amount: quoteParams.freight_amount !== undefined ? quoteParams.freight_amount : quoteParams.freight_amount_per_mt,
-      freight_display: quoteParams.freight_display,
-      total_landed_amount: quoteParams.total_landed_amount !== undefined ? quoteParams.total_landed_amount : ((quoteParams.base_amount || 0) + (quoteParams.gst_amount || 0) + (quoteParams.freight_amount || 0)),
+      gst_rate: gstRate,
+      gst_amount: gstAmount,
+      freight_amount: freightAmount,
+      freight_display: freightDisplay,
+      freight_type: normFreight.freight_type,
+      rate_per_mt: normFreight.rate_per_mt,
+      rate_per_kg: normFreight.rate_per_kg,
+      is_per_mt: (normFreight.freight_type === "per_mt"),
+      is_per_kg: (normFreight.freight_type === "per_kg"),
+      total_landed_amount: totalLandedAmount,
       delivery_period: quoteParams.delivery_period || quoteParams.delivery_timeline,
       delivery_timeline: quoteParams.delivery_timeline || quoteParams.delivery_period,
       payment_terms: quoteParams.payment_terms || "Not specified",
@@ -450,17 +477,36 @@ const PROCUREMENT_DATA = {
       status: "SUBMITTED"
     };
 
-    // Update assignment
+    if (normFreight.freight_type === "per_mt") {
+      quotation.freight_amount_per_mt = normFreight.freight_amount_per_mt || normFreight.rate_per_mt;
+      quotation.is_per_mt = true;
+    } else {
+      delete quotation.freight_amount_per_mt;
+      delete quotation.freight_rate_per_mt;
+      quotation.is_per_mt = false;
+    }
+
+    // Update assignment in shared store
     this.shared_store.supplier_assignments[supplierId] = {
       status: "SUBMITTED",
       quotation: quotation,
       submitted_at: new Date().toISOString()
     };
 
-    this.shared_store.quotations.push(quotation);
+    const qIdx = this.shared_store.quotations.findIndex(x => x.supplier_id === supplierId);
+    if (qIdx !== -1) {
+      this.shared_store.quotations[qIdx] = quotation;
+    } else {
+      this.shared_store.quotations.push(quotation);
+    }
     this.shared_store.unread_counts[supplierId] = 0;
-    this.shared_store.last_snippets[supplierId] = `✅ Submitted: ${quoteRef}`;
+    this.shared_store.last_snippets[supplierId] = `✅ Submitted: ${quoteRef} (${quotation.revision})`;
     this.shared_store.last_snippets["buyer"] = `📥 Quote from ${supp ? supp.short_name : supplierId}`;
+
+    // Invalidate cached comparison reports to ensure fresh data is always evaluated
+    this.shared_store.current_comparison = null;
+    this.shared_store.current_comparison_ref = null;
+    this.shared_store.comparison_reports = {};
 
     return { duplicate: false, quotation: quotation };
   },
@@ -569,7 +615,7 @@ const PROCUREMENT_DATA = {
           quality_docs: "-",
           quote_validity: "-",
           past_performance: supp.past_performance || "New",
-          rakshak_status: supp.rakshak_status || "Verification unavailable",
+          rakshak_status: supp.rakshak_status || "GST verification unavailable (Demo)",
           daam_guru_status: "-",
           rank_display: "Pending / No quote",
           rank_code: "PENDING",
@@ -599,14 +645,12 @@ const PROCUREMENT_DATA = {
         gstAmount = Math.round((baseAmount * gstRate) / 100);
       }
 
-      // Freight amount (consignment total)
-      const freightAmount = q.freight_amount || 0;
+      // Freight amount & normalization (canonical handling for lump sum, per MT, per unit, and included)
+      const normFreight = this.normalizeFreight(q, qty, rfqUnit);
+      const freightAmount = normFreight.freight_amount;
 
-      // Total landed cost = Base + GST + Freight
-      let totalLandedCost = q.total_landed_amount;
-      if (totalLandedCost === undefined || totalLandedCost === null) {
-        totalLandedCost = baseAmount + gstAmount + freightAmount;
-      }
+      // Total landed cost = Base + GST + Freight (always mathematically consistent)
+      const totalLandedCost = baseAmount + gstAmount + freightAmount;
 
       // Canonical unit normalization for "Landed cost per unit" row
       // When RFQ is in MT or kg, canonical comparison unit is "kg"
@@ -632,9 +676,9 @@ const PROCUREMENT_DATA = {
       // Format GST display: e.g. "18% (INR 4,950.00)"
       const gstDisplay = `${gstRate}% (INR ${gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
 
-      // Format Freight display: e.g. "INR 1,200.00" or "INR 0.00 (Included)"
+      // Format Freight display: e.g. "INR 1,000.00", "INR 75,000.00", or "INR 0.00 (Included)"
       let freightDisplay = "";
-      if (freightAmount === 0 && (q.freight_display || "").toLowerCase().includes("included")) {
+      if (freightAmount === 0 && (normFreight.freight_type === "included" || (q.freight_display || "").toLowerCase().includes("included"))) {
         freightDisplay = "INR 0.00 (Included)";
       } else {
         freightDisplay = `INR ${freightAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -644,12 +688,13 @@ const PROCUREMENT_DATA = {
       const landedCostPerUnitDisplay = `INR ${landedPerCanonicalUnitVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/${canonicalUnit}`;
       const totalLandedCostDisplay = `INR ${totalLandedCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-      // RAKSHAK Verification status & eligibility categories
-      const rakshakStatus = q.rakshak_status || supp.rakshak_status || "Verification unavailable";
+      // GST Verification status & eligibility categories
+      const rakshakStatus = q.rakshak_status || supp.rakshak_status || "GST verification unavailable (Demo)";
       const rakshakLower = rakshakStatus.toLowerCase();
 
       // Confirmed active verification: eligible for recommendation
-      const isRakshakVerified = rakshakLower.includes("verified and active") ||
+      const isRakshakVerified = rakshakLower.includes("gst verified") ||
+                                rakshakLower.includes("verified and active") ||
                                 (rakshakLower.includes("verified") && !rakshakLower.includes("unavailable")) ||
                                 rakshakLower === "pass";
 
@@ -703,6 +748,8 @@ const PROCUREMENT_DATA = {
         gst_display: gstDisplay,
         freight_amount: freightAmount,
         freight_display: freightDisplay,
+        freight_type: normFreight.freight_type,
+        rate_per_mt: normFreight.rate_per_mt,
         landed_cost_per_unit_val: landedPerCanonicalUnitVal,
         landed_cost_per_unit_unit: canonicalUnit,
         landed_cost_per_unit_display: landedCostPerUnitDisplay,
@@ -756,9 +803,9 @@ const PROCUREMENT_DATA = {
       if (lowestSubmitted && lowestSubmitted.supplier_id !== recommendedCol.supplier_id) {
         // A lower-priced bidder exists who could not be recommended
         if (lowestSubmitted.is_rakshak_failed) {
-          reason = `L1 bidder (${lowestSubmitted.supplier_name}) cannot be recommended due to failed RAKSHAK verification (${lowestSubmitted.rakshak_status}). Recommended ${recommendedCol.supplier_name} as the lowest verified and active bidder.`;
+          reason = `L1 bidder (${lowestSubmitted.supplier_name}) cannot be recommended due to failed GST verification (${lowestSubmitted.rakshak_status}). Recommended ${recommendedCol.supplier_name} as the lowest GST-verified bidder.`;
         } else {
-          reason = `Lowest quoted bidder (${lowestSubmitted.supplier_name}) cannot be recommended as RAKSHAK verification is pending/unavailable. Recommended ${recommendedCol.supplier_name} as the lowest verified and active bidder.`;
+          reason = `Lowest quoted bidder (${lowestSubmitted.supplier_name}) cannot be recommended as GST verification is pending/unavailable. Recommended ${recommendedCol.supplier_name} as the lowest GST-verified bidder.`;
         }
       } else {
         // Lowest quoted bidder is verified and active
@@ -771,11 +818,11 @@ const PROCUREMENT_DATA = {
       if (submittedCols.length === 0) {
         reason = "No quotations submitted yet to evaluate.";
       } else if (submittedCols.some(s => s.is_rakshak_unavailable) && !submittedCols.some(s => s.is_rakshak_failed)) {
-        reason = "All submitted quotations have pending or unavailable RAKSHAK verification. Recommendation deferred until verification is completed.";
+        reason = "All submitted quotations have pending or unavailable GST verification. Recommendation deferred until verification is completed.";
       } else if (submittedCols.every(s => s.is_rakshak_failed)) {
-        reason = "All submitted quotations failed RAKSHAK statutory verification criteria.";
+        reason = "All submitted quotations failed statutory GST verification criteria.";
       } else {
-        reason = "No submitted quotation currently holds confirmed 'Verified and active' RAKSHAK verification status.";
+        reason = "No submitted quotation currently holds confirmed GST-verified status.";
       }
     }
 
@@ -822,16 +869,16 @@ const PROCUREMENT_DATA = {
       pending_count: pendingNames.length,
       columns: supplierColumns,
       daam_guru_benchmark: benchmark,
-      daam_guru_disclosure: "DAAM GURU benchmark uses illustrative demo data for simulation purposes only. It is not a live or verified market quotation.",
+      daam_guru_disclosure: "Market price benchmark uses illustrative demo data for simulation purposes only. It is not a live or verified market quotation.",
       decision: {
         recommended_supplier: recommendedSupplier,
         reason: reason,
-        negotiation_attempted: "No - direct evaluation (SAUDAGAR assist available if required)",
+        negotiation_attempted: "No - direct evaluation (commercial assist available if required)",
         approved_quantity_split: "Pending buyer approval",
         prepared_by: `Procurement Desk . ${formattedDate}`,
         approved_by: "Pending buyer approval"
       },
-      note: "Golden rule for MSMEs: compare LANDED COST (rate + GST impact + freight), never the bare quoted rate - the cheapest quote is often not the cheapest supplier. The RAKSHAK row is pass/fail: a supplier failing verification cannot be recommended regardless of price. The DAAM GURU row shows whether even the L1 price is above market."
+      note: "Golden rule for MSMEs: compare LANDED COST (rate + GST impact + freight), never the bare quoted rate - the cheapest quote is often not the cheapest supplier. The GST verification row is pass/fail: a supplier failing verification cannot be recommended regardless of price. The Market Price Benchmark row shows whether even the L1 price is above market."
     };
 
     // Store in shared_store
@@ -895,6 +942,176 @@ const PROCUREMENT_DATA = {
     }
 
     return parts.join(" ").trim();
+  },
+
+  normalizeFreight: function(quoteData, rfqQuantity = 50.0, rfqUnit = "MT") {
+    const q = quoteData || {};
+    const qty = Number(rfqQuantity || 50.0);
+    const isRfqInMt = String(rfqUnit || "MT").toUpperCase().includes("MT");
+    const qtyInMt = isRfqInMt ? qty : (qty / 1000.0);
+    const qtyInKg = isRfqInMt ? (qty * 1000.0) : qty;
+
+    const rawDisp = String(q.freight_display || q.freight_desc || q.freight || "").trim();
+    const rawType = String(q.freight_type || "").trim().toLowerCase();
+
+    // ─────────────────────────────────────────────────────────────
+    // 1. EXPLICIT freight_type TAKES ABSOLUTE PRECEDENCE
+    // ─────────────────────────────────────────────────────────────
+
+    // Explicit 1: Included
+    if (rawType === "included" || rawType === "free" || rawType === "nil") {
+      return {
+        freight_type: "included",
+        freight_amount: 0,
+        rate_per_mt: 0,
+        rate_per_kg: 0,
+        display: "INR 0.00 (Included)",
+        original_display: q.freight_display || "₹0 (Freight included in rate)"
+      };
+    }
+
+    // Explicit 2: Lump Sum (NEVER multiply by quantity)
+    if (rawType === "lump_sum" || rawType === "flat") {
+      let amount = 0;
+      if (q.freight_amount !== undefined && q.freight_amount !== null) {
+        amount = Math.round(Number(q.freight_amount));
+      } else {
+        const match = rawDisp.replace(/[₹,Rs\.]/gi, " ").match(/(\d+(?:\s\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)/);
+        amount = match ? Math.round(parseFloat(match[1].replace(/\s/g, ""))) : 0;
+      }
+      const ratePerMt = qtyInMt > 0 ? (amount / qtyInMt) : 0;
+      const ratePerKg = qtyInKg > 0 ? (amount / qtyInKg) : 0;
+      const formattedDisplay = `INR ${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      return {
+        freight_type: "lump_sum",
+        freight_amount: amount,
+        rate_per_mt: ratePerMt,
+        rate_per_kg: ratePerKg,
+        display: formattedDisplay,
+        original_display: q.freight_display || `₹${amount.toLocaleString('en-IN')} (Lump sum)`
+      };
+    }
+
+    // Explicit 3: Per-MT (Multiply rate by RFQ quantity in MT)
+    if (rawType === "per_mt") {
+      let ratePerMt = 0;
+      if (q.freight_amount_per_mt !== undefined && q.freight_amount_per_mt !== null && Number(q.freight_amount_per_mt) > 0) {
+        ratePerMt = Number(q.freight_amount_per_mt);
+      } else if (q.freight_rate_per_mt !== undefined && q.freight_rate_per_mt !== null && Number(q.freight_rate_per_mt) > 0) {
+        ratePerMt = Number(q.freight_rate_per_mt);
+      } else if (q.rate_per_mt !== undefined && q.rate_per_mt !== null && Number(q.rate_per_mt) > 0 && (!q.freight_amount || Number(q.rate_per_mt) !== Number(q.freight_amount))) {
+        ratePerMt = Number(q.rate_per_mt);
+      } else {
+        const perMtMatch = rawDisp.match(/(\d+(?:,\d+)*(?:\.\d+)?)\s*(?:per\s*mt|per\s*tonne|\/\s*mt|\/\s*tonne)/i);
+        if (perMtMatch) {
+          ratePerMt = parseFloat(perMtMatch[1].replace(/,/g, ""));
+        } else {
+          const match = rawDisp.replace(/[₹,Rs\.]/gi, " ").match(/(\d+(?:\s\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)/);
+          if (match) {
+            ratePerMt = parseFloat(match[1].replace(/\s/g, ""));
+          } else if (q.freight_amount !== undefined && q.freight_amount !== null) {
+            ratePerMt = (Number(q.freight_amount) > 10000 && qtyInMt > 0) ? (Number(q.freight_amount) / qtyInMt) : Number(q.freight_amount);
+          }
+        }
+      }
+      let totalFreight = 0;
+      if (q.freight_amount !== undefined && q.freight_amount !== null && Number(q.freight_amount) === Math.round(ratePerMt * qtyInMt)) {
+        totalFreight = Number(q.freight_amount);
+      } else {
+        totalFreight = Math.round(ratePerMt * qtyInMt);
+      }
+      const ratePerKg = ratePerMt / 1000.0;
+      const formattedDisplay = `INR ${totalFreight.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      return {
+        freight_type: "per_mt",
+        freight_amount: totalFreight,
+        freight_amount_per_mt: ratePerMt,
+        rate_per_mt: ratePerMt,
+        rate_per_kg: ratePerKg,
+        display: formattedDisplay,
+        original_display: q.freight_display || `₹${totalFreight.toLocaleString('en-IN')} (₹${ratePerMt.toLocaleString('en-IN')}/MT × ${qtyInMt} MT)`
+      };
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 2. FALLBACK INFERENCE (When freight_type is not explicitly set)
+    // ─────────────────────────────────────────────────────────────
+    if (
+      q.freight_amount === 0 ||
+      /\b(included|nil|free|exempt|₹0|rs\.?\s*0)\b/i.test(rawDisp)
+    ) {
+      return {
+        freight_type: "included",
+        freight_amount: 0,
+        rate_per_mt: 0,
+        rate_per_kg: 0,
+        display: "INR 0.00 (Included)",
+        original_display: q.freight_display || "₹0 (Freight included in rate)"
+      };
+    }
+
+    const isPerMt = (
+      q.is_per_mt === true ||
+      (q.freight_amount_per_mt !== undefined && q.freight_amount_per_mt !== null && q.freight_amount_per_mt > 0) ||
+      /\b(per\s*mt|per\s*tonne|\/\s*mt|\/\s*tonne)\b/i.test(rawDisp)
+    );
+
+    if (isPerMt) {
+      let rate = 0;
+      if (q.freight_amount_per_mt !== undefined && q.freight_amount_per_mt !== null && q.freight_amount_per_mt > 0) {
+        rate = Number(q.freight_amount_per_mt);
+      } else if (q.freight_rate_per_mt !== undefined && q.freight_rate_per_mt !== null && q.freight_rate_per_mt > 0) {
+        rate = Number(q.freight_rate_per_mt);
+      } else {
+        const perMtMatch = rawDisp.match(/(\d+(?:,\d+)*(?:\.\d+)?)\s*(?:per\s*mt|per\s*tonne|\/\s*mt|\/\s*tonne)/i);
+        if (perMtMatch) {
+          rate = parseFloat(perMtMatch[1].replace(/,/g, ""));
+        } else {
+          const match = rawDisp.replace(/[₹,Rs\.]/gi, " ").match(/(\d+(?:\s\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)/);
+          rate = match ? parseFloat(match[1].replace(/\s/g, "")) : 0;
+        }
+      }
+      let totalFreight = 0;
+      if (q.freight_amount !== undefined && q.freight_amount !== null && Number(q.freight_amount) === Math.round(rate * qtyInMt)) {
+        totalFreight = Number(q.freight_amount);
+      } else if (q.freight_amount !== undefined && q.freight_amount !== null && Number(q.freight_amount) > 10000 && !q.freight_amount_per_mt && rate > 10000) {
+        totalFreight = Number(q.freight_amount);
+        rate = qtyInMt > 0 ? (totalFreight / qtyInMt) : 0;
+      } else {
+        totalFreight = Math.round(rate * qtyInMt);
+      }
+      const ratePerKg = rate / 1000.0;
+      const formattedDisplay = `INR ${totalFreight.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      return {
+        freight_type: "per_mt",
+        freight_amount: totalFreight,
+        freight_amount_per_mt: rate,
+        rate_per_mt: rate,
+        rate_per_kg: ratePerKg,
+        display: formattedDisplay,
+        original_display: q.freight_display || `₹${totalFreight.toLocaleString('en-IN')} (₹${rate.toLocaleString('en-IN')}/MT × ${qtyInMt} MT)`
+      };
+    }
+
+    // Default Lump Sum fallback
+    let totalFreight = 0;
+    if (q.freight_amount !== undefined && q.freight_amount !== null) {
+      totalFreight = Math.round(Number(q.freight_amount));
+    } else {
+      const match = rawDisp.replace(/[₹,Rs\.]/gi, " ").match(/(\d+(?:\s\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)/);
+      totalFreight = match ? Math.round(parseFloat(match[1].replace(/\s/g, ""))) : 0;
+    }
+    const ratePerMt = qtyInMt > 0 ? (totalFreight / qtyInMt) : 0;
+    const ratePerKg = qtyInKg > 0 ? (totalFreight / qtyInKg) : 0;
+    const formattedDisplay = `INR ${totalFreight.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return {
+      freight_type: "lump_sum",
+      freight_amount: totalFreight,
+      rate_per_mt: ratePerMt,
+      rate_per_kg: ratePerKg,
+      display: formattedDisplay,
+      original_display: q.freight_display || formattedDisplay
+    };
   },
 
   normalizeQuotationRates: function(quoteData, rfqQuantity = 50.0, rfqUnit = "MT") {
@@ -1172,7 +1389,7 @@ const PROCUREMENT_DATA = {
     let specialRow1Desc = `Agreed delivery lead time: ${po.delivery_timeline || '2 days from PO issuance'}. Delivery destination: ${deliverAddress}`;
     let specialRow1Override = "None";
     if (po.compliance_warning) {
-      specialRow1Desc = `Statutory Verification Standing: Vendor RAKSHAK statutory verification standing: ${po.compliance_warning}. Purchase order issued under buyer commercial authority.`;
+      specialRow1Desc = `Statutory Verification Standing: Vendor statutory GST verification standing: ${po.compliance_warning}. Purchase order issued under buyer commercial authority.`;
       specialRow1Override = "Condition 9";
     }
 
@@ -1424,7 +1641,7 @@ const PROCUREMENT_DATA = {
           <div class="t3-purechain-note">
             <div class="t3-note-title">Purechain note (T-3)</div>
             <div class="t3-note-body">
-              Condition 7 is Purechain's quiet superpower: it contractually secures the CBAM/EUDR/DPP data rights from suppliers that HARIYALI, KHOJAK and PASSPORT will later need - before the EU buyer ever asks. LEKHAK generates this PO from the accepted bid in T-2; supplier acceptance on WhatsApp is captured and stored as the acceptance record.
+              Condition 7 is Purechain's quiet superpower: it contractually secures the CBAM/EUDR/DPP data rights from suppliers that sustainability, Supplier Discovery and digital passport compliance will later need - before the EU buyer ever asks. PureChain generates this PO from the accepted bid in T-2; supplier acceptance on WhatsApp is captured and stored as the acceptance record.
             </div>
           </div>
         </div>

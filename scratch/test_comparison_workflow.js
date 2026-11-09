@@ -230,7 +230,7 @@ assert.strictEqual(s3Col.rank_code, "L3", "Supplier 3 is L3");
 // Recommendation check: S1 is L1 by price but verification is unavailable -> NOT recommended
 assert.strictEqual(s1Col.is_recommendation_eligible, false, "S1 is not eligible for recommendation (verification unavailable)");
 assert.strictEqual(rep3.decision.recommended_supplier, "UJJIVAN SMALL FINANCE BANK LIMITED", "Recommended supplier is UJJIVAN (lowest with verified and active status)");
-assert.ok(rep3.decision.reason.includes("cannot be recommended as RAKSHAK verification is pending/unavailable"), "Reason explicitly explains why lowest quoted bidder was not recommended");
+assert.ok(rep3.decision.reason.includes("cannot be recommended as GST verification is pending/unavailable") || rep3.decision.reason.includes("cannot be recommended as RAKSHAK verification is pending/unavailable"), "Reason explicitly explains why lowest quoted bidder was not recommended");
 console.log("  -> PASS: Landed-cost ranking preserved separately and verified supplier recommended!");
 
 // ---------------------------------------------------------------------
@@ -249,7 +249,7 @@ assert.strictEqual(s1RakshakCol.is_recommendation_eligible, false, "Supplier 1 i
 assert.strictEqual(s1RakshakCol.rank_code, "L1", "Landed cost rank L1 preserved even when verification failed");
 assert.notStrictEqual(repRakshak.decision.recommended_supplier, "Test Supplier Pvt Ltd", "Failed RAKSHAK supplier NOT recommended even with lowest cost!");
 assert.strictEqual(repRakshak.decision.recommended_supplier, "UJJIVAN SMALL FINANCE BANK LIMITED", "Recommendation passes to next lowest valid verified bidder (UJJIVAN)");
-assert.ok(repRakshak.decision.reason.includes("cannot be recommended due to failed RAKSHAK verification") || repRakshak.decision.reason.includes("disqualified due to RAKSHAK verification failure"), "Reason explicitly explains why L1 bidder was not recommended");
+assert.ok(repRakshak.decision.reason.includes("cannot be recommended due to failed GST verification") || repRakshak.decision.reason.includes("cannot be recommended due to failed RAKSHAK verification") || repRakshak.decision.reason.includes("disqualified due to RAKSHAK verification failure"), "Reason explicitly explains why L1 bidder was not recommended");
 
 // Test when NO supplier is verified and active
 const supp2Record = PROCUREMENT_DATA.getSupplierById("supplier_2");
@@ -352,8 +352,8 @@ assert.ok(t2Html.includes("Delivery period offered"), "HTML contains Row 7 Deliv
 assert.ok(t2Html.includes("Quality docs offered (TC/CoA/ISO)"), "HTML contains Row 8 Quality docs");
 assert.ok(t2Html.includes("Quote validity"), "HTML contains Row 9 Quote validity");
 assert.ok(t2Html.includes("Past performance with us (Good /"), "HTML contains Row 10 Past performance");
-assert.ok(t2Html.includes("RAKSHAK verification"), "HTML contains Row 11 RAKSHAK verification");
-assert.ok(t2Html.includes("DAAM GURU market benchmark"), "HTML contains Row 12 DAAM GURU benchmark");
+assert.ok(t2Html.includes("GST verification"), "HTML contains Row 11 GST verification");
+assert.ok(t2Html.includes("Market Price Benchmark"), "HTML contains Row 12 Market Price Benchmark");
 assert.ok(t2Html.includes("Rank by landed cost (L1 / L2 / L3)"), "HTML contains Row 13 Landed cost rank");
 assert.ok(t2Html.includes("Decision"), "HTML contains Section C Decision");
 assert.ok(t2Html.includes("Purechain note (T-2)"), "HTML contains Section D Purechain note (T-2)");
@@ -583,7 +583,7 @@ assert.ok(compMsg18.text.includes("• *Total Landed Cost:* *INR 29,50,000.00*")
 assert.ok(!compMsg18.text.includes("• *Own Landed Cost per Unit:* *INR 21.00/kg*"), "Ineligible supplier's rate NOT attributed to recommendation");
 
 // Explanation must mention why lower-priced supplier was not recommended
-assert.ok(compMsg18.text.includes("cannot be recommended due to failed RAKSHAK verification"), "Chat explains why lower-priced supplier was bypassed");
+assert.ok(compMsg18.text.includes("cannot be recommended due to failed GST verification") || compMsg18.text.includes("cannot be recommended due to failed RAKSHAK verification"), "Chat explains why lower-priced supplier was bypassed");
 
 console.log("  -> PASS: Commercial ranking vs recommendation eligibility cleanly separated!");
 

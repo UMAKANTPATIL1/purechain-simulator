@@ -64,7 +64,7 @@ console.log("===================================================================
 // Test 1: Demo dataset loads correctly
 // -------------------------------------------------------------
 console.log("\n[TEST 1] Verifying demo dataset structure and records...");
-assert.strictEqual(DAAM_GURU_DATA.source_name, "DAAM GURU Demo Dataset");
+assert.strictEqual(DAAM_GURU_DATA.source_name, "Market Price Benchmark Demo Dataset");
 assert.ok(Array.isArray(DAAM_GURU_DATA.records), "Records must be an array");
 assert.strictEqual(DAAM_GURU_DATA.records.length, 5, "Expected exactly 5 demo records");
 
@@ -78,7 +78,7 @@ DAAM_GURU_DATA.records.forEach(r => {
   assert.ok(typeof r.maximum_price === "number");
   assert.ok(typeof r.modal_price === "number");
   assert.strictEqual(r.unit, "INR/quintal");
-  assert.strictEqual(r.source, "DAAM GURU Demo Dataset");
+  assert.strictEqual(r.source, "Market Price Benchmark Demo Dataset");
   assert.strictEqual(r.is_demo_data, true, "is_demo_data must be true");
   assert.ok(r.price_date, "Record must have price_date");
 });
@@ -238,8 +238,8 @@ PROCUREMENT_DATA.submitQuotation("supplier_3", {
 engine.buyer_state.rfq_ref = "PC-RFQ-2026-0113";
 const compMsg = engine.executeGenerateComparison();
 
-assert.ok(compMsg.text.includes("DAAM GURU MARKET BENCHMARK COMPARISON"), "Must contain section header");
-assert.ok(compMsg.text.includes("Source: DAAM GURU Demo Dataset") || compMsg.text.includes("*Source:* DAAM GURU Demo Dataset"));
+assert.ok(compMsg.text.includes("MARKET PRICE BENCHMARK COMPARISON"), "Must contain section header");
+assert.ok(compMsg.text.includes("Source: Market Price Benchmark Demo Dataset") || compMsg.text.includes("*Source:* Market Price Benchmark Demo Dataset"));
 assert.ok(compMsg.text.includes("Status: Illustrative demo data — not live market prices") || compMsg.text.includes("*Status:* Illustrative demo data — not live market prices"));
 assert.ok(compMsg.text.includes("Commodity: Onion") || compMsg.text.includes("*Commodity:* Onion"));
 assert.ok(compMsg.text.includes("Lasalgaon, Maharashtra"));
@@ -250,27 +250,27 @@ assert.ok(compMsg.text.includes("+INR 3.04/kg (+9.5%)"));
 assert.ok(compMsg.text.includes("UJJIVAN SMALL FINANCE BANK LIMITED"));
 assert.ok(compMsg.text.includes("INR 70.82/kg"));
 assert.ok(compMsg.text.includes("+INR 38.82/kg (+121.31%)"));
-console.log("  -> PASS: Buyer WhatsApp summary contains complete DAAM GURU section with exact expected values!");
+console.log("  -> PASS: Buyer WhatsApp summary contains complete Market Price Benchmark section with exact expected values!");
 
 // -------------------------------------------------------------
 // Test 12: T-2 PDF displays benchmark comparisons for all submitted suppliers
 // -------------------------------------------------------------
-console.log("\n[TEST 12] Verifying T-2 PDF HTML rendering of DAAM GURU row...");
+console.log("\n[TEST 12] Verifying T-2 PDF HTML rendering of Market Price Benchmark row...");
 const report = PROCUREMENT_DATA.shared_store.current_comparison;
 const t2Html = modal.buildComparisonDocumentHtml(report);
 
-assert.ok(t2Html.includes("DAAM GURU market benchmark"), "Must contain DAAM GURU row header");
+assert.ok(t2Html.includes("Market Price Benchmark"), "Must contain Market Price Benchmark row header");
 assert.ok(t2Html.includes("₹32.00/kg benchmark | ₹35.04/kg landed | +9.5% above market"), "Must contain Supplier Test benchmark comparison");
 assert.ok(t2Html.includes("₹32.00/kg benchmark | ₹70.82/kg landed | +121.31% above market"), "Must contain UJJIVAN benchmark comparison");
 assert.ok(t2Html.includes("<td>-</td>"), "Pending supplier (supplier_1) must display '-'");
-console.log("  -> PASS: T-2 PDF HTML displays DAAM GURU row with benchmark comparisons for all submitted suppliers!");
+console.log("  -> PASS: T-2 PDF HTML displays Market Price Benchmark row with benchmark comparisons for all submitted suppliers!");
 
 // -------------------------------------------------------------
 // Test 13: Demo-data disclosure appears in WhatsApp and PDF
 // -------------------------------------------------------------
 console.log("\n[TEST 13] Verifying demo-data disclosure in WhatsApp and PDF...");
 assert.ok(compMsg.text.includes("Illustrative demo data — not live market prices"), "Disclosure in WhatsApp");
-assert.ok(t2Html.includes("DAAM GURU benchmark uses illustrative demo data for simulation purposes only. It is not a live or verified market quotation."), "Disclosure in T-2 PDF");
+assert.ok(t2Html.includes("Market price benchmark uses illustrative demo data for simulation purposes only. It is not a live or verified market quotation."), "Disclosure in T-2 PDF");
 console.log("  -> PASS: Clear demo-data disclosures present in both WhatsApp summary and T-2 PDF!");
 
 // -------------------------------------------------------------
@@ -303,7 +303,7 @@ assert.strictEqual(unkReport.daam_guru_benchmark, null, "Should have no benchmar
 
 engine.buyer_state.rfq_ref = "PC-RFQ-2026-9999";
 const unkMsg = engine.executeGenerateComparison();
-assert.ok(unkMsg.text.includes("DAAM GURU benchmark unavailable — no matching demo market record."), "WhatsApp missing notice");
+assert.ok(unkMsg.text.includes("Market price benchmark unavailable — no matching demo market record."), "WhatsApp missing notice");
 
 const unkHtml = modal.buildComparisonDocumentHtml(unkReport);
 assert.ok(unkHtml.includes("Benchmark unavailable — no matching market record.") || unkHtml.includes("<td>-</td>"), "PDF missing notice");

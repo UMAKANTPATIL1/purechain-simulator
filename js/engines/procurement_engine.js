@@ -928,7 +928,7 @@ class ProcurementEngine {
           `• *Payment Terms:* ${col.payment_terms}`,
           `• *Quotation Validity:* ${col.quote_validity}`,
           `• *Quality Documents Offered:* ${col.quality_docs}`,
-          `• *RAKSHAK Statutory Verification:* *${col.rakshak_status}*`,
+          `• *GST Statutory Verification:* *${col.rakshak_status}*`,
           ``
         );
       });
@@ -946,15 +946,15 @@ class ProcurementEngine {
     }
 
     // -------------------------------------------------------------
-    // DAAM GURU Market Benchmark Comparison Section
+    // Market Price Benchmark Comparison Section
     // -------------------------------------------------------------
     lines.push(`━━━━━━━━━━━━━━━━━━━━━━━━━`);
-    lines.push(`📊 *DAAM GURU MARKET BENCHMARK COMPARISON*\n`);
+    lines.push(`📊 *MARKET PRICE BENCHMARK COMPARISON*\n`);
     const bench = report.daam_guru_benchmark;
 
     if (bench) {
       lines.push(
-        `• *Source:* ${bench.source || 'DAAM GURU Demo Dataset'}`,
+        `• *Source:* ${bench.source || 'Market Price Benchmark Demo Dataset'}`,
         `• *Status:* Illustrative demo data — not live market prices`,
         `• *Commodity:* ${bench.commodity}`,
         `• *Market:* ${bench.market}, ${bench.state}`,
@@ -981,7 +981,7 @@ class ProcurementEngine {
       });
     } else {
       lines.push(
-        `_DAAM GURU benchmark unavailable — no matching demo market record._\n`
+        `_Market price benchmark unavailable — no matching demo market record._\n`
       );
     }
 
@@ -999,7 +999,7 @@ class ProcurementEngine {
         `• *Own Landed Cost per Unit:* *${recCol.landed_cost_per_unit_display}*`,
         `• *Total Landed Cost:* *${recCol.total_landed_cost_display}*`,
         `• *Delivery Period:* ${recCol.delivery_period}`,
-        `• *RAKSHAK Verification:* *${recCol.rakshak_status}*`,
+        `• *GST Verification:* *${recCol.rakshak_status}*`,
         `• *Why Selected:* ${report.decision.reason}`,
         `• *Buyer Approval Status:* ⏳ *Pending buyer approval*`
       );
@@ -1070,8 +1070,8 @@ class ProcurementEngine {
         const eligibilityTag = col.is_recommendation_eligible
           ? `🟢 Eligible for PO Award`
           : col.is_rakshak_failed
-            ? `🔴 Ineligible (Failed RAKSHAK statutory verification)`
-            : `🟡 Ineligible (RAKSHAK statutory verification pending/unavailable)`;
+            ? `🔴 Ineligible (Failed GST statutory verification)`
+            : `🟡 Ineligible (GST statutory verification pending/unavailable)`;
 
         lines.push(
           `🏢 *${idx + 1}. ${col.supplier_name}* (${col.location}) ${isRec ? '— _T-2 Advisory Recommendation_' : ''}`,
@@ -1085,7 +1085,7 @@ class ProcurementEngine {
           `• *Payment Terms:* ${col.payment_terms}`,
           `• *Quotation Validity:* ${col.quote_validity}`,
           `• *Quality Documents Offered:* ${col.quality_docs}`,
-          `• *RAKSHAK Verification Status:* *${col.rakshak_status}* (${eligibilityTag})`,
+          `• *GST Verification Status:* *${col.rakshak_status}* (${eligibilityTag})`,
           ``
         );
       });
@@ -1197,9 +1197,9 @@ class ProcurementEngine {
 
     let complianceWarning = "";
     if (col.is_rakshak_failed) {
-      complianceWarning = `\n⚠️ *COMPLIANCE WARNING (STATUTORY RISK)*:\nSupplier *${col.supplier_name}* has statutory RAKSHAK status: *${col.rakshak_status}*. GSTR-2B ITC reconciliation may be impacted. Proceeding under buyer commercial authority.\n`;
+      complianceWarning = `\n⚠️ *COMPLIANCE WARNING (STATUTORY RISK)*:\nSupplier *${col.supplier_name}* has statutory GST verification status: *${col.rakshak_status}*. GSTR-2B ITC reconciliation may be impacted. Proceeding under buyer commercial authority.\n`;
     } else if (col.is_rakshak_unavailable || (!col.is_rakshak_verified && !col.is_rakshak_failed)) {
-      complianceWarning = `\n⚠️ *COMPLIANCE WARNING (VERIFICATION PENDING/UNAVAILABLE)*:\nSupplier *${col.supplier_name}* has statutory RAKSHAK status: *${col.rakshak_status}*. Statutory verification has not been confirmed as 'Verified and active'. Buyer discretion exercised under organization procurement policy.\n`;
+      complianceWarning = `\n⚠️ *COMPLIANCE WARNING (VERIFICATION PENDING/UNAVAILABLE)*:\nSupplier *${col.supplier_name}* has statutory GST verification status: *${col.rakshak_status}*. Statutory verification has not been confirmed as 'GST verified'. Buyer discretion exercised under organization procurement policy.\n`;
     } else {
       complianceWarning = `\n🟢 *STATUTORY VERIFICATION*:\nConfirmed *${col.rakshak_status}*.\n`;
     }
@@ -1282,9 +1282,9 @@ class ProcurementEngine {
 
     let complianceNotice = "";
     if (col.is_rakshak_failed) {
-      complianceNotice = `⚠️ *Compliance Warning:* Statutory RAKSHAK status is *${col.rakshak_status}*. Proceeding under buyer commercial authority.\n`;
+      complianceNotice = `⚠️ *Compliance Warning:* Statutory GST verification status is *${col.rakshak_status}*. Proceeding under buyer commercial authority.\n`;
     } else if (col.is_rakshak_unavailable || (!col.is_rakshak_verified && !col.is_rakshak_failed)) {
-      complianceNotice = `⚠️ *Compliance Warning:* Statutory RAKSHAK status is *${col.rakshak_status}* (verification pending/unavailable). Proceeding under buyer commercial authority.\n`;
+      complianceNotice = `⚠️ *Compliance Warning:* Statutory GST verification status is *${col.rakshak_status}* (verification pending/unavailable). Proceeding under buyer commercial authority.\n`;
     }
 
     s.buyer_approval_status = "PENDING";
@@ -1436,9 +1436,9 @@ class ProcurementEngine {
 
     let complianceWarning = null;
     if (col.is_rakshak_failed) {
-      complianceWarning = `Failed statutory verification (${col.rakshak_status})`;
+      complianceWarning = `Failed statutory GST verification (${col.rakshak_status})`;
     } else if (col.is_rakshak_unavailable || (!col.is_rakshak_verified && !col.is_rakshak_failed)) {
-      complianceWarning = `Verification pending/unavailable (${col.rakshak_status})`;
+      complianceWarning = `GST verification pending/unavailable (${col.rakshak_status})`;
     }
 
     let po = null;
@@ -2230,7 +2230,9 @@ Click on any of the **Supplier tabs** in the left sidebar (**Test Supplier**, **
       return {
         freight_amount: 0,
         display: "₹0 (Freight included in rate)",
-        is_per_mt: false
+        is_per_mt: false,
+        freight_type: "included",
+        rate_per_mt: 0
       };
     }
 
@@ -2244,6 +2246,8 @@ Click on any of the **Supplier tabs** in the left sidebar (**Test Supplier**, **
     if (isPerMt) {
       const totalFreight = Math.round(num * rfqQuantity);
       return {
+        freight_type: "per_mt",
+        freight_amount_per_mt: num,
         freight_amount: totalFreight,
         rate_per_mt: num,
         display: `₹${totalFreight.toLocaleString('en-IN')} (₹${num.toLocaleString('en-IN')}/MT × ${rfqQuantity} MT)`,
@@ -2252,7 +2256,9 @@ Click on any of the **Supplier tabs** in the left sidebar (**Test Supplier**, **
     } else {
       const totalFreight = Math.round(num);
       return {
+        freight_type: "lump_sum",
         freight_amount: totalFreight,
+        rate_per_mt: rfqQuantity > 0 ? (totalFreight / rfqQuantity) : 0,
         display: `₹${totalFreight.toLocaleString('en-IN')} (Lump sum)`,
         is_per_mt: false
       };
@@ -2425,6 +2431,22 @@ Click on any of the **Supplier tabs** in the left sidebar (**Test Supplier**, **
     }
     d.base_amount = Math.round(qtyInQuotedUnit * (d.unit_rate_val || 0));
     d.gst_amount = Math.round(d.base_amount * (d.gst_rate || 0) / 100);
+
+    // Canonical freight normalization
+    const normFreight = PROCUREMENT_DATA.normalizeFreight(d, rfqQty, rfq.unit || "MT");
+    d.freight_type = normFreight.freight_type;
+    d.freight_amount = normFreight.freight_amount;
+    d.freight_display = d.freight_display || normFreight.original_display || normFreight.display;
+
+    if (normFreight.freight_type === "per_mt") {
+      d.freight_amount_per_mt = normFreight.freight_amount_per_mt || normFreight.rate_per_mt;
+      d.is_per_mt = true;
+    } else {
+      delete d.freight_amount_per_mt;
+      delete d.freight_rate_per_mt;
+      d.is_per_mt = false;
+    }
+
     d.total_landed_amount = d.base_amount + d.gst_amount + (d.freight_amount || 0);
 
     const words = this.formatInrWords(d.total_landed_amount);
@@ -2513,9 +2535,27 @@ Click on any of the **Supplier tabs** in the left sidebar (**Test Supplier**, **
     const randNum = Math.floor(1000 + Math.random() * 9000);
     const quoteRef = `QT-2026-${suppNum}-${randNum}`;
 
+    // Track revision numbers: Rev 0 -> Rev 1 -> Rev 2
+    const prevAssign = PROCUREMENT_DATA.shared_store.supplier_assignments[supplierId];
+    let revision = "Rev 0";
+    if (prevAssign && prevAssign.quotation && prevAssign.quotation.revision) {
+      const match = prevAssign.quotation.revision.match(/Rev\s*(\d+)/i);
+      const revNum = match ? parseInt(match[1], 10) + 1 : 1;
+      revision = `Rev ${revNum}`;
+    }
+
+    // Clean up per-MT flags if lump sum or included
+    if (d.freight_type === "per_mt") {
+      d.is_per_mt = true;
+    } else {
+      delete d.freight_amount_per_mt;
+      delete d.freight_rate_per_mt;
+      d.is_per_mt = false;
+    }
+
     const submissionParams = {
       quotation_ref: quoteRef,
-      revision: "Rev 0",
+      revision: revision,
       unit_rate_val: d.unit_rate_val,
       unit_rate_unit: d.unit_rate_unit,
       unit_rate_display: d.unit_rate_display,
@@ -2525,12 +2565,19 @@ Click on any of the **Supplier tabs** in the left sidebar (**Test Supplier**, **
       gst_amount: d.gst_amount,
       freight_amount: d.freight_amount,
       freight_display: d.freight_display,
+      freight_type: d.freight_type,
+      rate_per_mt: d.rate_per_mt,
       total_landed_amount: d.total_landed_amount,
       delivery_period: d.delivery_period,
       payment_terms: d.payment_terms,
       quotation_validity: d.quotation_validity,
-      quality_docs: d.quality_docs
+      quality_docs: d.quality_docs,
+      allow_update: true
     };
+    if (d.freight_type === "per_mt") {
+      submissionParams.freight_amount_per_mt = d.freight_amount_per_mt || d.rate_per_mt;
+      submissionParams.is_per_mt = true;
+    }
 
     const result = PROCUREMENT_DATA.submitQuotation(supplierId, submissionParams);
     if (result.duplicate) {
@@ -2579,6 +2626,7 @@ Click on any of the **Supplier tabs** in the left sidebar (**Test Supplier**, **
       sender: "purechain",
       text: lines.join("\n"),
       buttons: [
+        { id: "btn_supp_revise_quote", text: "✏️ Revise Quotation" },
         { id: "btn_preview_rfq_doc", text: "📄 Preview RFQ Document" }
       ],
       step: "SUBMITTED"
@@ -2593,7 +2641,7 @@ Click on any of the **Supplier tabs** in the left sidebar (**Test Supplier**, **
     const supp = PROCUREMENT_DATA.getSupplierById(supplierId);
     const suppState = this.supplier_states[supplierId] || this.createInitialSupplierState(supplierId);
     this.supplier_states[supplierId] = suppState;
-    const rfq = PROCUREMENT_DATA.shared_store.current_rfq;
+    const rfq = PROCUREMENT_DATA.shared_store.current_rfq || (PROCUREMENT_DATA.shared_store.current_rfq = PROCUREMENT_DATA.createRFQ({ material: "Onion", quantity: 50.0 }));
     const d = suppState.data;
 
     // ─────────────────────────────────────────────────────────────
@@ -2623,18 +2671,61 @@ Click on any of the **Supplier tabs** in the left sidebar (**Test Supplier**, **
       return null;
     }
 
-    // Check if already submitted
+    // Check if already submitted & support quotation revisions
     const assign = PROCUREMENT_DATA.shared_store.supplier_assignments[supplierId];
     if (assign && assign.status === "SUBMITTED") {
-      const q = assign.quotation;
-      return {
-        sender: "purechain",
-        text: `⚠️ *Quotation Already Submitted*\n\nYou have already submitted quotation \`${q.quotation_ref}\` for RFQ \`${rfq.rfq_ref}\`.\n\n• Unit Rate: *${q.unit_rate_display || q.unit_price_display}*\n• GST: *${q.gst_rate}%*\n• Freight: *${q.freight_display}*\n• Total Landed: *₹${q.total_landed_amount ? q.total_landed_amount.toLocaleString('en-IN') : 'N/A'}*\n• Delivery Period: *${q.delivery_period || q.delivery_timeline}*\n• Validity: *${q.quotation_validity}*\n\nMultiple submissions are prevented in this simulation stage.`,
-        buttons: [
-          { id: "btn_preview_rfq_doc", text: "📄 Preview RFQ Document" }
-        ],
-        step: "SUBMITTED"
-      };
+      const isInRevisionFlow = (suppState.step && (suppState.step.startsWith("QUOTE_") || suppState.step === "EDIT_QUOTE_MENU")) || suppState.editing_field !== null;
+      const isRevisionTrigger = actionId === "btn_supp_revise_quote" ||
+                                actionId === "btn_supp_start_quote" ||
+                                actionId === "btn_supp_edit_quote" ||
+                                actionId === "btn_supp_cancel_edit" ||
+                                (actionId && actionId.startsWith("btn_edit_q")) ||
+                                (isInRevisionFlow && (actionId.startsWith("btn_q_") || actionId.startsWith("btn_edit_q") || actionId === "btn_supp_confirm_submit" || actionId === "btn_supp_edit_quote" || actionId === "btn_supp_cancel_edit"));
+
+      if (!isRevisionTrigger) {
+        const q = assign.quotation;
+        return {
+          sender: "purechain",
+          text: `⚠️ *Quotation Already Submitted*\n\nYou have already submitted quotation \`${q.quotation_ref}\` (${q.revision || 'Rev 0'}) for RFQ \`${rfq.rfq_ref}\`.\n\n• Unit Rate: *${q.unit_rate_display || q.unit_price_display}*\n• GST: *${q.gst_rate}%*\n• Freight: *${q.freight_display}*\n• Total Landed: *₹${q.total_landed_amount ? q.total_landed_amount.toLocaleString('en-IN') : 'N/A'}*\n• Delivery Period: *${q.delivery_period || q.delivery_timeline}*\n• Validity: *${q.quotation_validity}*\n\nTo modify freight charges or submit a revised bid, tap *✏️ Revise Quotation* below:`,
+          buttons: [
+            { id: "btn_supp_revise_quote", text: "✏️ Revise Quotation" },
+            { id: "btn_preview_rfq_doc", text: "📄 Preview RFQ Document" }
+          ],
+          step: "SUBMITTED"
+        };
+      }
+
+      if (actionId === "btn_supp_revise_quote") {
+        if (assign.quotation) {
+          const q = assign.quotation;
+          d.unit_rate_val = q.unit_rate_val;
+          d.unit_rate_unit = q.unit_rate_unit;
+          d.unit_rate_display = q.unit_rate_display;
+          d.base_amount = q.base_amount;
+          d.calc_str = q.calc_breakdown;
+          d.gst_rate = q.gst_rate;
+          d.gst_amount = q.gst_amount;
+          d.gst_display = `${q.gst_rate}%`;
+          d.freight_amount = q.freight_amount;
+          d.freight_display = q.freight_display;
+          d.freight_type = q.freight_type;
+          d.rate_per_mt = q.rate_per_mt;
+          d.total_landed_amount = q.total_landed_amount;
+          d.delivery_period = q.delivery_period;
+          d.payment_terms = q.payment_terms;
+          d.quotation_validity = q.quotation_validity;
+          d.quality_docs = q.quality_docs;
+          if (q.freight_type === "per_mt") {
+            d.freight_amount_per_mt = q.freight_amount_per_mt || q.rate_per_mt;
+            d.is_per_mt = true;
+          } else {
+            delete d.freight_amount_per_mt;
+            delete d.freight_rate_per_mt;
+            d.is_per_mt = false;
+          }
+        }
+        return this.renderSupplierQuoteSummary(supplierId);
+      }
     }
 
     // Modal Document Preview
@@ -2675,6 +2766,9 @@ Click on any of the **Supplier tabs** in the left sidebar (**Test Supplier**, **
 
     // Start Quotation Flow
     if (actionId === "btn_supp_start_quote" || suppState.step === "RECEIVED") {
+      if (suppState.step === "INIT" || suppState.step === "RECEIVED") {
+        suppState.data = this.createInitialSupplierState(supplierId).data;
+      }
       suppState.current_field = 1;
       return this.renderSupplierFieldPrompt(supplierId, 1);
     }
@@ -2763,6 +2857,16 @@ Click on any of the **Supplier tabs** in the left sidebar (**Test Supplier**, **
 
       d.freight_amount = parsed.freight_amount;
       d.freight_display = parsed.display;
+      d.freight_type = parsed.freight_type;
+      d.rate_per_mt = parsed.rate_per_mt;
+      if (parsed.freight_type === "per_mt") {
+        d.freight_amount_per_mt = parsed.freight_amount_per_mt;
+        d.is_per_mt = true;
+      } else {
+        delete d.freight_amount_per_mt;
+        delete d.freight_rate_per_mt;
+        d.is_per_mt = false;
+      }
 
       if (suppState.editing_field === 3) {
         suppState.editing_field = null;

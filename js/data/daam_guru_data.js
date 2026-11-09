@@ -8,7 +8,7 @@
  */
 
 const DAAM_GURU_DATA = {
-  source_name: "DAAM GURU Demo Dataset",
+  source_name: "Market Price Benchmark Demo Dataset",
   status_disclosure: "Illustrative demo data — not live market prices",
   demo_date: "08 Nov 2026 (Demo Benchmark)",
 
@@ -25,7 +25,7 @@ const DAAM_GURU_DATA = {
       modal_price: 3200,
       unit: "INR/quintal",
       price_date: "08 Nov 2026 (Demo Benchmark)",
-      source: "DAAM GURU Demo Dataset",
+      source: "Market Price Benchmark Demo Dataset",
       is_demo_data: true
     },
     {
@@ -39,7 +39,7 @@ const DAAM_GURU_DATA = {
       modal_price: 3500,
       unit: "INR/quintal",
       price_date: "08 Nov 2026 (Demo Benchmark)",
-      source: "DAAM GURU Demo Dataset",
+      source: "Market Price Benchmark Demo Dataset",
       is_demo_data: true
     },
     {
@@ -53,7 +53,7 @@ const DAAM_GURU_DATA = {
       modal_price: 3300,
       unit: "INR/quintal",
       price_date: "08 Nov 2026 (Demo Benchmark)",
-      source: "DAAM GURU Demo Dataset",
+      source: "Market Price Benchmark Demo Dataset",
       is_demo_data: true
     },
     {
@@ -67,7 +67,7 @@ const DAAM_GURU_DATA = {
       modal_price: 2600,
       unit: "INR/quintal",
       price_date: "08 Nov 2026 (Demo Benchmark)",
-      source: "DAAM GURU Demo Dataset",
+      source: "Market Price Benchmark Demo Dataset",
       is_demo_data: true
     },
     {
@@ -81,7 +81,7 @@ const DAAM_GURU_DATA = {
       modal_price: 4500,
       unit: "INR/quintal",
       price_date: "08 Nov 2026 (Demo Benchmark)",
-      source: "DAAM GURU Demo Dataset",
+      source: "Market Price Benchmark Demo Dataset",
       is_demo_data: true
     }
   ],
@@ -184,7 +184,7 @@ const DAAM_GURU_DATA = {
       is_demo_data: true,
       is_fallback_market: isFallbackMarket,
       is_fallback_state: isFallbackState,
-      disclosure: "DAAM GURU benchmark uses illustrative demo data for simulation purposes only. It is not a live or verified market quotation."
+      disclosure: "Market price benchmark uses illustrative demo data for simulation purposes only. It is not a live or verified market quotation."
     };
   },
 

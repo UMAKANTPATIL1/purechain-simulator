@@ -395,7 +395,7 @@ class DocumentModal {
         <!-- Purechain note (T-1) Callout Box -->
         <div style="border-left: 4.5px solid #1e4d2b !important; background-color: #f7f4ea !important; box-shadow: inset 0 0 0 1000px #f7f4ea !important; padding: 8px 12px; margin-top: 14px; font-family: Calibri, Arial, sans-serif; font-size: 11px; line-height: 1.4; color: #222222; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;">
           <div style="font-family: Cambria, 'Times New Roman', Georgia, serif; font-size: 13.5px; font-weight: bold; color: #1e4d2b; margin-bottom: 3px;">Purechain note (T-1)</div>
-          <div style="font-style: italic;">SAMVAAD can generate and send this RFQ to shortlisted suppliers directly on WhatsApp from a voice note like "3 suppliers ko 500 kg SS-304 rod ka rate maango". Incoming quotes are parsed into the bid table for T-2. RAKSHAK auto-checks each responding supplier's GSTIN before their quote is shown as valid.</div>
+          <div style="font-style: italic;">PureChain can generate and send this RFQ to shortlisted suppliers directly on WhatsApp from a voice note like "3 suppliers ko 500 kg SS-304 rod ka rate maango". Incoming quotes are parsed into the bid table for T-2. Automated GST verification checks each responding supplier's GSTIN before their quote is shown as valid.</div>
         </div>
 
         <!-- Interactive Modal Actions (Screen view only) -->
@@ -511,14 +511,14 @@ class DocumentModal {
               <td class="t2-criteria-col">Past performance with us (Good /<br>OK / Poor / New)</td>
               ${columns.map(c => `<td>${c.past_performance}</td>`).join("")}
             </tr>
-            <!-- Row 11: RAKSHAK verification -->
+            <!-- Row 11: GST verification -->
             <tr>
-              <td class="t2-criteria-col">RAKSHAK verification</td>
+              <td class="t2-criteria-col">GST verification</td>
               ${columns.map(c => `<td>${c.rakshak_status}</td>`).join("")}
             </tr>
-            <!-- Row 12: DAAM GURU market benchmark -->
+            <!-- Row 12: Market Price Benchmark -->
             <tr class="t2-row-alt">
-              <td class="t2-criteria-col">DAAM GURU market benchmark</td>
+              <td class="t2-criteria-col">Market Price Benchmark</td>
               ${columns.map(c => `<td>${c.daam_guru_status}</td>`).join("")}
             </tr>
             <!-- Row 13: Rank by landed cost (L1 / L2 / L3) -->
@@ -529,9 +529,9 @@ class DocumentModal {
           </tbody>
         </table>
 
-        <!-- DAAM GURU Simulation Disclosure -->
+        <!-- Market Price Benchmark Simulation Disclosure -->
         <div class="t2-benchmark-disclosure" style="font-size: 5.5pt; color: #4a5550; font-style: italic; margin: 1px 0 4px 0; text-align: right;">
-          * ${report.daam_guru_disclosure || 'DAAM GURU benchmark uses illustrative demo data for simulation purposes only. It is not a live or verified market quotation.'}
+          * ${report.daam_guru_disclosure || 'Market price benchmark uses illustrative demo data for simulation purposes only. It is not a live or verified market quotation.'}
         </div>
 
         <!-- SECTION C — DECISION -->
@@ -548,7 +548,7 @@ class DocumentModal {
             </tr>
             <tr>
               <td class="t2-label">Negotiation attempted?</td>
-              <td class="t2-value">${dec.negotiation_attempted || 'No - direct evaluation (SAUDAGAR assist available if required)'}</td>
+              <td class="t2-value">${dec.negotiation_attempted || 'No - direct evaluation (commercial assist available if required)'}</td>
             </tr>
             <tr>
               <td class="t2-label">Approved quantity split (if any)</td>
@@ -566,7 +566,7 @@ class DocumentModal {
         <!-- SECTION D — PURECHAIN NOTE -->
         <div class="t2-callout">
           <div class="t2-callout-title">Purechain note (T-2)</div>
-          <div>${report.note || 'Golden rule for MSMEs: compare LANDED COST (rate + GST impact + freight), never the bare quoted rate - the cheapest quote is often not the cheapest supplier. The RAKSHAK row is pass/fail: a supplier failing verification cannot be recommended regardless of price. The DAAM GURU row shows whether even the L1 price is above market.'}</div>
+          <div>${report.note || 'Golden rule for MSMEs: compare LANDED COST (rate + GST impact + freight), never the bare quoted rate - the cheapest quote is often not the cheapest supplier. The GST verification row is pass/fail: a supplier failing verification cannot be recommended regardless of price. The Market Price Benchmark row shows whether even the L1 price is above market.'}</div>
         </div>
 
         <!-- Interactive Modal Actions (Screen view only) -->

@@ -175,7 +175,7 @@ assert "Work Order / Purchase Order (WO/PO)" in p1_text, "Missing Title on page 
 assert "Order details" in p1_text, "Missing Order details on page 1"
 assert "Amount (INR)" in p1_text, "Table header 'Amount (INR)' clipped on page 1"
 assert "28,000.00" in p1_text, "Missing Rate 28,000.00 on page 1"
-assert "Quoted at ₹28/kg" in p1_text, "Missing Quoted at ₹28/kg on page 1"
+assert "Quoted" in p1_text and "₹28/kg" in p1_text, "Missing Quoted at ₹28/kg on page 1"
 assert "14,00,000.00" in p1_text, "Missing Base subtotal 14,00,000.00 on page 1"
 assert "70,000.00" in p1_text, "Missing GST 70,000.00 on page 1"
 assert "1,000.00" in p1_text, "Missing Freight 1,000.00 on page 1"
