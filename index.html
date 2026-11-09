@@ -88,6 +88,71 @@
             </div>
           </div>
         </li>
+
+        <!-- Section: Multi-User Procurement Simulation -->
+        <li style="padding: 10px 16px 6px; font-size: 11px; font-weight: 700; color: var(--wa-green-primary); letter-spacing: 0.5px; background-color: rgba(0, 168, 132, 0.05); border-bottom: 1px solid var(--wa-border);">
+          PROCUREMENT CHATS (MULTI-USER)
+        </li>
+
+        <!-- 4. Buyer — Apex Green Metals Pvt Ltd -->
+        <li class="workflow-tab-item" data-workflow="PROCUREMENT_BUYER" id="tab_buyer">
+          <div class="wf-icon-circle" style="background-color: #005c4b; color: #e9edef;">🏢</div>
+          <div class="wf-details">
+            <div class="wf-title-row">
+              <h3>Apex Green Metals</h3>
+              <span class="wf-time" id="time_buyer">10:30 AM</span>
+            </div>
+            <div class="wf-preview-row">
+              <span class="wf-snippet" id="snippet_buyer">Buyer • RFQ Desk</span>
+              <span class="wf-badge" style="background-color: #008069; color: #fff;">Buyer</span>
+            </div>
+          </div>
+        </li>
+
+        <!-- 5. Supplier 1 — Test Supplier Pvt Ltd -->
+        <li class="workflow-tab-item" data-workflow="PROCUREMENT_SUPPLIER_1" id="tab_supplier_1">
+          <div class="wf-icon-circle">🏬</div>
+          <div class="wf-details">
+            <div class="wf-title-row">
+              <h3>Test Supplier Pvt Ltd</h3>
+              <span class="wf-time" id="time_supplier_1">Pune</span>
+            </div>
+            <div class="wf-preview-row">
+              <span class="wf-snippet" id="snippet_supplier_1">Supplier 1 • Verified</span>
+              <span class="wf-badge">Supplier</span>
+            </div>
+          </div>
+        </li>
+
+        <!-- 6. Supplier 2 — UJJIVAN SMALL FINANCE BANK LIMITED -->
+        <li class="workflow-tab-item" data-workflow="PROCUREMENT_SUPPLIER_2" id="tab_supplier_2">
+          <div class="wf-icon-circle">🏦</div>
+          <div class="wf-details">
+            <div class="wf-title-row">
+              <h3>UJJIVAN SMALL FINANCE BANK</h3>
+              <span class="wf-time" id="time_supplier_2">Dispur</span>
+            </div>
+            <div class="wf-preview-row">
+              <span class="wf-snippet" id="snippet_supplier_2">Supplier 2 • Verified</span>
+              <span class="wf-badge">Supplier</span>
+            </div>
+          </div>
+        </li>
+
+        <!-- 7. Supplier 3 — Supplier Test -->
+        <li class="workflow-tab-item" data-workflow="PROCUREMENT_SUPPLIER_3" id="tab_supplier_3">
+          <div class="wf-icon-circle">🏭</div>
+          <div class="wf-details">
+            <div class="wf-title-row">
+              <h3>Supplier Test</h3>
+              <span class="wf-time" id="time_supplier_3">Mumbai</span>
+            </div>
+            <div class="wf-preview-row">
+              <span class="wf-snippet" id="snippet_supplier_3">Supplier 3 • Verified</span>
+              <span class="wf-badge">Supplier</span>
+            </div>
+          </div>
+        </li>
       </ul>
 
       <!-- Sidebar Footer -->
@@ -177,11 +242,14 @@
   <script src="js/data/hariyali_data.js"></script>
   <script src="js/data/cbam_data.js"></script>
   <script src="js/data/brsr_data.js"></script>
+  <script src="js/data/daam_guru_data.js"></script>
+  <script src="js/data/procurement_data.js"></script>
   <script src="js/data/sample_docs.js"></script>
   <script src="js/engines/ocr_engine.js"></script>
   <script src="js/engines/hariyali_engine.js"></script>
   <script src="js/engines/cbam_engine.js"></script>
   <script src="js/engines/brsr_engine.js"></script>
+  <script src="js/engines/procurement_engine.js"></script>
   <script src="js/ui/chat_view.js"></script>
   <script src="js/ui/document_modal.js"></script>
   <script src="js/ui/controls.js"></script>

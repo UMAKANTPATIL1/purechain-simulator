@@ -126,8 +126,16 @@ class ChatView {
     if (msg.document) {
       const docType = msg.document.type || "HARIYALI";
       const docMode = msg.document.mode || "ALL_AVAILABLE";
+      let clickAttr = `window.documentModal.showReportPreview('${docType}', window.hariyaliEngine.state, '${docMode}')`;
+      if (docType === "CBAM") {
+        clickAttr = `window.documentModal.showReportPreview('CBAM', window.cbamEngine.state)`;
+      } else if (docType === "BRSR") {
+        clickAttr = `window.documentModal.showReportPreview('BRSR', window.brsrEngine.state)`;
+      } else if (docType === "RFQ_DOCUMENT") {
+        clickAttr = `window.documentModal.showReportPreview('RFQ_DOCUMENT', window.PROCUREMENT_DATA ? window.PROCUREMENT_DATA.shared_store.current_rfq : null)`;
+      }
       docCardHtml = `
-        <div class="whatsapp-doc-card" style="cursor: pointer;" onclick="window.documentModal.showReportPreview('${docType}', window.hariyaliEngine.state, '${docMode}')">
+        <div class="whatsapp-doc-card" style="cursor: pointer;" onclick="${clickAttr}">
           <div class="doc-header">
             <div class="doc-icon-badge">📄</div>
             <div class="doc-meta-info">
@@ -175,6 +183,36 @@ class ChatView {
     }
     if (buttonId === "btn_brsr_open_pdf_modal") {
       window.documentModal.showReportPreview("BRSR", window.brsrEngine.state);
+      return;
+    }
+    if (buttonId === "btn_preview_rfq_doc") {
+      let rfq = window.PROCUREMENT_DATA ? window.PROCUREMENT_DATA.shared_store.current_rfq : null;
+      if (window.procurementEngine && window.procurementEngine.syncRfqStore) {
+        rfq = window.procurementEngine.syncRfqStore();
+      } else if (!rfq && window.procurementEngine && window.procurementEngine.buyer_state) {
+        const s = window.procurementEngine.buyer_state;
+        rfq = window.PROCUREMENT_DATA.createRFQ({
+          rfq_ref: s.rfq_ref,
+          material: "Onion",
+          quantity: s.quantity,
+          unit: s.unit,
+          technical_specs: s.technical_specs,
+          delivery_location: s.delivery_location,
+          quotation_deadline: s.quotation_deadline,
+          quote_validity: s.quote_validity,
+          payment_terms: s.payment_terms,
+          delivery_required_by: s.delivery_required_by,
+          terms_config: s.terms,
+          buyer: {
+            ...window.PROCUREMENT_DATA.buyer,
+            gstin: s.gstin,
+            contact_name: s.contact_name,
+            contact_phone: s.contact_phone,
+            contact_email: s.contact_email
+          }
+        });
+      }
+      window.documentModal.showReportPreview("RFQ_DOCUMENT", rfq);
       return;
     }
 

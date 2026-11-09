@@ -20,11 +20,16 @@ class PurechainSimulatorApp {
     window.hariyaliEngine = new HariyaliEngine(this);
     window.cbamEngine = new CBAMEngine(this);
     window.brsrEngine = new BRSREngine(this);
+    window.procurementEngine = new ProcurementEngine(this);
 
     this.engines = {
       HARIYALI: window.hariyaliEngine,
       CBAM: window.cbamEngine,
       BRSR: window.brsrEngine,
+      PROCUREMENT_BUYER: window.procurementEngine,
+      PROCUREMENT_SUPPLIER_1: window.procurementEngine,
+      PROCUREMENT_SUPPLIER_2: window.procurementEngine,
+      PROCUREMENT_SUPPLIER_3: window.procurementEngine,
     };
 
     // 2. Start initial workflow
@@ -59,7 +64,16 @@ class PurechainSimulatorApp {
     // Update header details with natural client-facing copy
     this.updateHeader(workflowName);
 
-    // Clear and load initial conversation
+    // Multi-user procurement workflows maintain independent persistent conversation histories
+    if (workflowName.startsWith("PROCUREMENT_")) {
+      window.chatView.clearChat();
+      const participantId = workflowName.replace("PROCUREMENT_", "").toLowerCase();
+      window.procurementEngine.loadParticipantConversation(participantId, animate);
+      this.updateProgressBanner();
+      return;
+    }
+
+    // Clear and load initial conversation for compliance workflows
     window.chatView.clearChat();
     const engine = this.getActiveEngine();
     const initialMsg = engine.getInitialMessage();
@@ -97,6 +111,26 @@ class PurechainSimulatorApp {
         title: "Purechain AI",
         subtitle: "BRSR Disclosures • Verified",
         banner: "SEBI BRSR Core Disclosures",
+      },
+      PROCUREMENT_BUYER: {
+        title: "Apex Green Metals Pvt Ltd",
+        subtitle: "Buyer • Procurement Desk • Online",
+        banner: "Commercial RFQ Management",
+      },
+      PROCUREMENT_SUPPLIER_1: {
+        title: "Test Supplier Pvt Ltd",
+        subtitle: "Supplier 1 • Pune, Maharashtra • Verified",
+        banner: "Commercial Quotation Submission",
+      },
+      PROCUREMENT_SUPPLIER_2: {
+        title: "UJJIVAN SMALL FINANCE BANK LIMITED",
+        subtitle: "Supplier 2 • Dispur, Assam • Verified",
+        banner: "Commercial Quotation Submission",
+      },
+      PROCUREMENT_SUPPLIER_3: {
+        title: "Supplier Test",
+        subtitle: "Supplier 3 • Mumbai, Maharashtra • Verified",
+        banner: "Commercial Quotation Submission",
       }
     };
 
@@ -162,6 +196,41 @@ class PurechainSimulatorApp {
         CONSOLIDATED_REVIEW: "Consolidated Review",
         RESULT: "BRSR Core Results",
         REPORT_READY: "SEBI Statement Prepared",
+      },
+      PROCUREMENT_BUYER: {
+        INIT: "RFQ Initiation",
+        SELECT_MATERIAL: "Commodity Selection",
+        ENTER_QUANTITY: "Quantity & Volume",
+        ENTER_SPECS: "Quality Specifications",
+        ENTER_LOCATION: "Plant Delivery Point",
+        ENTER_DEADLINE: "Quotation Window",
+        REVIEW_TERMS: "Statutory Terms",
+        SELECT_SUPPLIERS: "Supplier Matching",
+        REVIEW_RFQ: "RFQ Dossier Review",
+        DISPATCH_CONFIRMED: "RFQ Dispatched",
+        MONITOR_STATUS: "Quotation Submissions",
+        COMPARISON_GENERATED: "Bid Comparison Report (T-2)",
+      },
+      PROCUREMENT_SUPPLIER_1: {
+        AWAITING: "Standby Mode",
+        RECEIVED: "RFQ Ingested",
+        QUOTATION_FORM: "Quotation Formulation",
+        CONFIRM_QUOTE: "Commercial Offer Review",
+        SUBMITTED: "Quotation Submitted",
+      },
+      PROCUREMENT_SUPPLIER_2: {
+        AWAITING: "Standby Mode",
+        RECEIVED: "RFQ Ingested",
+        QUOTATION_FORM: "Quotation Formulation",
+        CONFIRM_QUOTE: "Commercial Offer Review",
+        SUBMITTED: "Quotation Submitted",
+      },
+      PROCUREMENT_SUPPLIER_3: {
+        AWAITING: "Standby Mode",
+        RECEIVED: "RFQ Ingested",
+        QUOTATION_FORM: "Quotation Formulation",
+        CONFIRM_QUOTE: "Commercial Offer Review",
+        SUBMITTED: "Quotation Submitted",
       }
     };
 
@@ -193,6 +262,12 @@ class PurechainSimulatorApp {
     };
     window.chatView.appendMessage(userMsg);
 
+    // Record user message in procurement participant history if active
+    if (this.currentWorkflow.startsWith("PROCUREMENT_")) {
+      const participantId = this.currentWorkflow.replace("PROCUREMENT_", "").toLowerCase();
+      window.procurementEngine.recordMessage(participantId, userMsg);
+    }
+
     // 2. Typing indicator
     window.chatView.showTyping(true);
 
@@ -206,11 +281,19 @@ class PurechainSimulatorApp {
           response.forEach((r, idx) => {
             setTimeout(() => {
               window.chatView.appendMessage(r);
+              if (this.currentWorkflow.startsWith("PROCUREMENT_")) {
+                const participantId = this.currentWorkflow.replace("PROCUREMENT_", "").toLowerCase();
+                window.procurementEngine.recordMessage(participantId, r);
+              }
               this.updateProgressBanner();
             }, idx * 400);
           });
         } else {
           window.chatView.appendMessage(response);
+          if (this.currentWorkflow.startsWith("PROCUREMENT_")) {
+            const participantId = this.currentWorkflow.replace("PROCUREMENT_", "").toLowerCase();
+            window.procurementEngine.recordMessage(participantId, response);
+          }
           this.updateProgressBanner();
         }
       }
@@ -243,6 +326,7 @@ class PurechainSimulatorApp {
     window.hariyaliEngine.reset();
     window.cbamEngine.reset();
     window.brsrEngine.reset();
+    if (window.procurementEngine) window.procurementEngine.reset();
     this.switchWorkflow("HARIYALI", true);
   }
 }
