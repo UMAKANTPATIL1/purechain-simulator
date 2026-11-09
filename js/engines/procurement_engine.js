@@ -40,7 +40,11 @@ class ProcurementEngine {
       unit: "MT",
       technical_specs: "Grade A Red Onion (45-60mm), Moisture < 14%, 50 kg mesh bags",
       delivery_location: null,
-      registered_address: null,
+      delivery_location_details: null,
+      temp_delivery_selection: null,
+      registered_office_address: "Plot No. 42, MIDC Industrial Area, Bhosari, Pune, Maharashtra - 411026",
+      registered_office_pin: "411026",
+      registered_address: "Plot No. 42, MIDC Industrial Area, Bhosari, Pune, Maharashtra - 411026",
       quotation_deadline: null,
       quote_validity: null,
       payment_terms: null,
@@ -367,6 +371,7 @@ class ProcurementEngine {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   handleBuyerAction(actionId, textInput) {
+    actionId = actionId || "";
     const s = this.buyer_state;
 
     // Direct Action & Document Preview Handlers
@@ -513,7 +518,7 @@ class ProcurementEngine {
     }
 
     // Step 1: Start RFQ -> Material Selection
-    if (actionId === "btn_buyer_start_rfq" || s.step === "INIT") {
+    if (actionId === "btn_buyer_start_rfq" || (s.step === "INIT" && !actionId)) {
       s.step = "SELECT_MATERIAL";
       this.state.step = "SELECT_MATERIAL";
       return {
@@ -622,6 +627,7 @@ class ProcurementEngine {
     if (actionId === "btn_back_to_review") {
       s.is_editing_term = null;
       s.editing_contact_field = null;
+      s.temp_delivery_selection = null;
       this.syncRfqStore();
       return this.renderBuyerRfqReview();
     }
@@ -657,13 +663,444 @@ class ProcurementEngine {
     }
 
     // Step 6: Term 2 (Delivery Location)
-    if (actionId.startsWith("btn_t2_") || s.step === "TERM_2") {
+    if (actionId.startsWith("btn_t2_") || s.step === "TERM_2" || s.step === "TERM_2_CITY_INPUT" || s.step === "TERM_2_OTHER_INPUT" || s.step === "TERM_2_REG_OFFICE_MISSING_PIN" || s.step === "TERM_2_REG_OFFICE_MISSING_ADDR") {
+      // Rejection of skip (Delivery location is mandatory)
       if (actionId === "btn_t2_skip") {
-        s.terms.term_2 = "Not specified";
-        s.delivery_location = null;
-      } else if (textInput && textInput.trim()) {
-        s.terms.term_2 = textInput.trim();
-        s.delivery_location = textInput.trim();
+        return {
+          sender: "purechain",
+          text: `⚠️ *Delivery Location is Mandatory*\n\nAn official RFQ cannot be created without a confirmed delivery destination. Please select one of the following options:`,
+          buttons: [
+            { id: "btn_t2_same_registered", text: "1️⃣ Same as registered office" },
+            { id: "btn_t2_city_pune", text: "2️⃣ Pune, Maharashtra" },
+            { id: "btn_t2_city_mumbai", text: "3️⃣ Mumbai, Maharashtra" },
+            { id: "btn_t2_city_nashik", text: "4️⃣ Nashik, Maharashtra" },
+            { id: "btn_t2_city_nagpur", text: "5️⃣ Nagpur, Maharashtra" },
+            { id: "btn_t2_other_location", text: "6️⃣ Other location" }
+          ],
+          step: "TERM_2"
+        };
+      }
+
+      // Return to options menu
+      if (actionId === "btn_t2_back_to_options") {
+        s.temp_delivery_selection = null;
+        return this.renderTermQuestion2(s);
+      }
+
+      // Option 1: Same as registered office
+      if (actionId === "btn_t2_same_registered") {
+        const regAddr = s.registered_office_address || (PROCUREMENT_DATA.buyer && (PROCUREMENT_DATA.buyer.registered_office_address || PROCUREMENT_DATA.buyer.registered_address));
+        const regPin = s.registered_office_pin || (PROCUREMENT_DATA.buyer && PROCUREMENT_DATA.buyer.registered_office_pin);
+        const pinMatch = (regPin && /^[1-9][0-9]{5}$/.test(regPin)) ? [regPin] : (regAddr ? regAddr.match(/\b[1-9][0-9]{5}\b/) : null);
+
+        if (regAddr && pinMatch) {
+          const pin = pinMatch[0];
+          let fullAddr = regAddr;
+          if (!fullAddr.includes(pin)) {
+            fullAddr = `${regAddr} - ${pin}`;
+          }
+          s.delivery_location = fullAddr;
+          s.delivery_location_details = {
+            selection_type: "same_as_registered",
+            city: (PROCUREMENT_DATA.buyer && PROCUREMENT_DATA.buyer.registered_office_city) || "Pune",
+            state: (PROCUREMENT_DATA.buyer && PROCUREMENT_DATA.buyer.registered_office_state) || "Maharashtra",
+            locality: (PROCUREMENT_DATA.buyer && PROCUREMENT_DATA.buyer.registered_office_locality) || "Bhosari MIDC",
+            address: regAddr,
+            pin_code: pin,
+            full_address: fullAddr
+          };
+          s.terms.term_2 = fullAddr;
+          s.temp_delivery_selection = null;
+          this.syncRfqStore();
+          if (s.is_editing_term === 2) {
+            s.is_editing_term = null;
+            return this.renderBuyerRfqReview();
+          }
+          return this.renderTermQuestion3(s);
+        } else if (regAddr && !pinMatch) {
+          s.temp_delivery_selection = { type: "same_as_registered", address: regAddr };
+          s.step = "TERM_2_REG_OFFICE_MISSING_PIN";
+          this.state.step = "TERM_2_REG_OFFICE_MISSING_PIN";
+          return {
+            sender: "purechain",
+            text: `📍 *Term 2 of 8: Delivery Location (Registered Office)*\n\nRegistered office address on record:\n*${regAddr}*\n\n⚠️ The 6-digit PIN code is missing. Please enter the valid 6-digit PIN code for this address:`,
+            buttons: [
+              { id: "btn_t2_back_to_options", text: "↩️ Choose Another Option" }
+            ],
+            step: "TERM_2_REG_OFFICE_MISSING_PIN"
+          };
+        } else {
+          s.temp_delivery_selection = { type: "same_as_registered" };
+          s.step = "TERM_2_REG_OFFICE_MISSING_ADDR";
+          this.state.step = "TERM_2_REG_OFFICE_MISSING_ADDR";
+          return {
+            sender: "purechain",
+            text: `📍 *Term 2 of 8: Delivery Location (Registered Office)*\n\nThe registered office address is not on file. Please enter the complete registered office address, city, state and 6-digit PIN code:`,
+            buttons: [
+              { id: "btn_t2_back_to_options", text: "↩️ Choose Another Option" }
+            ],
+            step: "TERM_2_REG_OFFICE_MISSING_ADDR"
+          };
+        }
+      }
+
+      // Options 2-5: Predefined cities
+      if (actionId === "btn_t2_city_pune" || actionId === "btn_t2_city_mumbai" || actionId === "btn_t2_city_nashik" || actionId === "btn_t2_city_nagpur") {
+        const cityMap = {
+          btn_t2_city_pune: { city: "Pune", state: "Maharashtra", example: "Plot 15, Chakan Industrial Area Phase 2, Near Talegaon Road, 410501" },
+          btn_t2_city_mumbai: { city: "Mumbai", state: "Maharashtra", example: "Gala 102, APMC Market Yard 2, Turbhe, Navi Mumbai, 400705" },
+          btn_t2_city_nashik: { city: "Nashik", state: "Maharashtra", example: "Plot 24, Ambad MIDC, Near Garware Point, Nashik, 422010" },
+          btn_t2_city_nagpur: { city: "Nagpur", state: "Maharashtra", example: "Shed 8, Hingna Industrial Estate, Near Central MIDC Road, 440028" }
+        };
+        const sel = cityMap[actionId];
+        s.temp_delivery_selection = {
+          type: "predefined",
+          city: sel.city,
+          state: sel.state,
+          address: null,
+          pin_code: null,
+          example: sel.example
+        };
+        s.step = "TERM_2_CITY_INPUT";
+        this.state.step = "TERM_2_CITY_INPUT";
+        const buttons = [{ id: "btn_t2_back_to_options", text: "↩️ Choose Another Option" }];
+        if (s.is_editing_term) buttons.push({ id: "btn_back_to_review", text: "↩️ Cancel & Back to Review" });
+        return {
+          sender: "purechain",
+          text: `📍 *Term 2 of 8: Delivery Location — ${sel.city}, ${sel.state}*\n\nPlease enter the delivery details for *${sel.city}, ${sel.state}*:\n\n• Locality / area\n• Actual delivery address (warehouse, premises, street, etc.)\n• 6-digit PIN code\n\n_Example: ${sel.example}_`,
+          buttons: buttons,
+          step: "TERM_2_CITY_INPUT"
+        };
+      }
+
+      // Option 6: Other location
+      if (actionId === "btn_t2_other_location") {
+        s.temp_delivery_selection = {
+          type: "other",
+          city: null,
+          state: null,
+          address: null,
+          pin_code: null
+        };
+        s.step = "TERM_2_OTHER_INPUT";
+        this.state.step = "TERM_2_OTHER_INPUT";
+        const buttons = [{ id: "btn_t2_back_to_options", text: "↩️ Choose Another Option" }];
+        if (s.is_editing_term) buttons.push({ id: "btn_back_to_review", text: "↩️ Cancel & Back to Review" });
+        return {
+          sender: "purechain",
+          text: `📍 *Term 2 of 8: Delivery Location — Other Location*\n\nPlease enter the complete delivery destination:\n\n• City and State\n• Locality / area\n• Complete delivery address (warehouse / premises / street)\n• 6-digit PIN code\n\n_Example: Warehouse 4B, Sanand GIDC, Ahmedabad, Gujarat - 382110_`,
+          buttons: buttons,
+          step: "TERM_2_OTHER_INPUT"
+        };
+      }
+
+      // Process user text input
+      if (textInput && textInput.trim()) {
+        const raw = textInput.trim();
+        const pinMatch = raw.match(/\b[1-9][0-9]{5}\b/);
+        const badPinMatch = raw.match(/\b(?:0\d{5}|\d{3,5}|\d{7,})\b/);
+
+        // Sub-case A: Registered office missing PIN input
+        if (s.step === "TERM_2_REG_OFFICE_MISSING_PIN") {
+          if (!pinMatch) {
+            return {
+              sender: "purechain",
+              text: `⚠️ *Invalid PIN Code*\n\n"${raw}" is not a valid 6-digit Indian PIN code. Please enter a valid 6-digit PIN code for the registered office address:\n\n_Example: 411026_`,
+              buttons: [{ id: "btn_t2_back_to_options", text: "↩️ Choose Another Option" }],
+              step: "TERM_2_REG_OFFICE_MISSING_PIN"
+            };
+          }
+          const pin = pinMatch[0];
+          const baseAddr = (s.temp_delivery_selection && s.temp_delivery_selection.address) || (PROCUREMENT_DATA.buyer && (PROCUREMENT_DATA.buyer.registered_office_address || PROCUREMENT_DATA.buyer.registered_address)) || "Plot No. 42, MIDC Industrial Area, Bhosari, Pune, Maharashtra";
+          const fullAddr = `${baseAddr} - ${pin}`;
+          s.delivery_location = fullAddr;
+          s.delivery_location_details = {
+            selection_type: "same_as_registered",
+            city: (PROCUREMENT_DATA.buyer && PROCUREMENT_DATA.buyer.registered_office_city) || "Pune",
+            state: (PROCUREMENT_DATA.buyer && PROCUREMENT_DATA.buyer.registered_office_state) || "Maharashtra",
+            locality: (PROCUREMENT_DATA.buyer && PROCUREMENT_DATA.buyer.registered_office_locality) || "Bhosari MIDC",
+            address: baseAddr,
+            pin_code: pin,
+            full_address: fullAddr
+          };
+          s.terms.term_2 = fullAddr;
+          s.temp_delivery_selection = null;
+          this.syncRfqStore();
+          if (s.is_editing_term === 2) {
+            s.is_editing_term = null;
+            return this.renderBuyerRfqReview();
+          }
+          return this.renderTermQuestion3(s);
+        }
+
+        // Sub-case B: Predefined city input
+        if (s.step === "TERM_2_CITY_INPUT") {
+          const sel = s.temp_delivery_selection || { city: "Pune", state: "Maharashtra", example: "Plot 15, Chakan Industrial Area Phase 2, 410501" };
+
+          // If address was already stored and user is now entering PIN
+          if (sel.address && !sel.pin_code) {
+            if (pinMatch) {
+              const pin = pinMatch[0];
+              const fullAddr = `${sel.address}, ${sel.city}, ${sel.state} - ${pin}`;
+              s.delivery_location = fullAddr;
+              s.delivery_location_details = {
+                selection_type: sel.city.toLowerCase(),
+                city: sel.city,
+                state: sel.state,
+                locality: sel.address,
+                address: sel.address,
+                pin_code: pin,
+                full_address: fullAddr
+              };
+              s.terms.term_2 = fullAddr;
+              s.temp_delivery_selection = null;
+              this.syncRfqStore();
+              if (s.is_editing_term === 2) {
+                s.is_editing_term = null;
+                return this.renderBuyerRfqReview();
+              }
+              return this.renderTermQuestion3(s);
+            } else {
+              return {
+                sender: "purechain",
+                text: `⚠️ *Invalid PIN Code*\n\n"${raw}" is not a valid 6-digit Indian PIN code. Please enter a valid 6-digit PIN code for *${sel.city}, ${sel.state}*:`,
+                buttons: [{ id: "btn_t2_back_to_options", text: "↩️ Choose Another Option" }],
+                step: "TERM_2_CITY_INPUT"
+              };
+            }
+          }
+
+          // If PIN was already stored and user is now entering address
+          if (sel.pin_code && !sel.address) {
+            const cleanedAddr = raw.replace(new RegExp(sel.city, 'gi'), '').replace(new RegExp(sel.state, 'gi'), '').replace(/[-–,]/g, ' ').trim();
+            if (cleanedAddr.length < 3) {
+              return {
+                sender: "purechain",
+                text: `⚠️ *Missing Information: Delivery Address*\n\nA city name alone is not sufficient. Please enter the actual delivery address (warehouse, premises, street) in ${sel.city}:`,
+                buttons: [{ id: "btn_t2_back_to_options", text: "↩️ Choose Another Option" }],
+                step: "TERM_2_CITY_INPUT"
+              };
+            }
+            const fullAddr = `${raw}, ${sel.city}, ${sel.state} - ${sel.pin_code}`;
+            s.delivery_location = fullAddr;
+            s.delivery_location_details = {
+              selection_type: sel.city.toLowerCase(),
+              city: sel.city,
+              state: sel.state,
+              locality: raw,
+              address: raw,
+              pin_code: sel.pin_code,
+              full_address: fullAddr
+            };
+            s.terms.term_2 = fullAddr;
+            s.temp_delivery_selection = null;
+            this.syncRfqStore();
+            if (s.is_editing_term === 2) {
+              s.is_editing_term = null;
+              return this.renderBuyerRfqReview();
+            }
+            return this.renderTermQuestion3(s);
+          }
+
+          // Check if bare city name alone (e.g. "Pune", "Pune, Maharashtra")
+          const isBareCity = new RegExp('^\\s*' + sel.city + '(?:\\s*,\\s*' + sel.state + ')?\\s*$', 'i').test(raw);
+          if (isBareCity) {
+            return {
+              sender: "purechain",
+              text: `⚠️ *Missing Information: Delivery Address & PIN Code*\n\nA city name alone is not a complete delivery address. Please provide the actual delivery address (warehouse, premises, street) and 6-digit PIN code in ${sel.city}:\n\n_Example: ${sel.example}_`,
+              buttons: [{ id: "btn_t2_back_to_options", text: "↩️ Choose Another Option" }],
+              step: "TERM_2_CITY_INPUT"
+            };
+          }
+
+          // Check if invalid PIN attempt
+          if (!pinMatch && badPinMatch) {
+            const badPin = badPinMatch[0];
+            const addrPart = raw.replace(badPin, '').replace(/[-–,]/g, ' ').trim();
+            if (addrPart.length >= 3) {
+              sel.address = addrPart;
+            }
+            return {
+              sender: "purechain",
+              text: `⚠️ *Invalid PIN Code*\n\n"${badPin}" is not a valid 6-digit Indian PIN code. Please enter a valid 6-digit PIN code (digits 1-9 followed by 5 digits):`,
+              buttons: [{ id: "btn_t2_back_to_options", text: "↩️ Choose Another Option" }],
+              step: "TERM_2_CITY_INPUT"
+            };
+          }
+
+          // If no PIN at all
+          if (!pinMatch) {
+            sel.address = raw;
+            return {
+              sender: "purechain",
+              text: `⚠️ *Missing Information: 6-Digit PIN Code*\n\nAddress received: *${raw}, ${sel.city}, ${sel.state}*\n\nPlease enter the valid 6-digit PIN code for this delivery location:`,
+              buttons: [{ id: "btn_t2_back_to_options", text: "↩️ Choose Another Option" }],
+              step: "TERM_2_CITY_INPUT"
+            };
+          }
+
+          // PIN is present! Check if actual address is present
+          const pin = pinMatch[0];
+          const nonPinText = raw.replace(pin, '').replace(/[-–,]/g, ' ').trim();
+          const words = nonPinText.split(/\s+/).filter(w => {
+            const lw = w.toLowerCase();
+            return lw && lw !== sel.city.toLowerCase() && lw !== sel.state.toLowerCase() && lw !== "pin" && lw !== "pincode";
+          });
+
+          if (words.length === 0) {
+            sel.pin_code = pin;
+            return {
+              sender: "purechain",
+              text: `⚠️ *Missing Information: Delivery Address*\n\nPIN code received: *${pin}* (${sel.city}, ${sel.state}).\n\nA city name alone is not sufficient. Please enter the actual delivery address or warehouse / premises / street:`,
+              buttons: [{ id: "btn_t2_back_to_options", text: "↩️ Choose Another Option" }],
+              step: "TERM_2_CITY_INPUT"
+            };
+          }
+
+          // Both address and PIN are valid!
+          let fullAddr = raw;
+          if (!new RegExp(sel.city, 'i').test(fullAddr)) {
+            const cleanAddr = raw.replace(pin, '').replace(/[-–,]+$/, '').trim();
+            fullAddr = `${cleanAddr}, ${sel.city}, ${sel.state} - ${pin}`;
+          }
+          s.delivery_location = fullAddr;
+          s.delivery_location_details = {
+            selection_type: sel.city.toLowerCase(),
+            city: sel.city,
+            state: sel.state,
+            locality: words.join(' '),
+            address: fullAddr,
+            pin_code: pin,
+            full_address: fullAddr
+          };
+          s.terms.term_2 = fullAddr;
+          s.temp_delivery_selection = null;
+          this.syncRfqStore();
+          if (s.is_editing_term === 2) {
+            s.is_editing_term = null;
+            return this.renderBuyerRfqReview();
+          }
+          return this.renderTermQuestion3(s);
+        }
+
+        // Sub-case C: Other location input
+        if (s.step === "TERM_2_OTHER_INPUT") {
+          const sel = s.temp_delivery_selection || {};
+
+          if (!pinMatch && badPinMatch) {
+            return {
+              sender: "purechain",
+              text: `⚠️ *Invalid PIN Code*\n\n"${badPinMatch[0]}" is not a valid 6-digit Indian PIN code. Please enter a valid 6-digit PIN code:`,
+              buttons: [{ id: "btn_t2_back_to_options", text: "↩️ Choose Another Option" }],
+              step: "TERM_2_OTHER_INPUT"
+            };
+          }
+
+          if (!pinMatch) {
+            const words = raw.split(/[\s,]+/).filter(w => w.length > 0);
+            if (words.length <= 2) {
+              return {
+                sender: "purechain",
+                text: `⚠️ *Missing Information: Delivery Address & PIN Code*\n\nA city name alone is not a complete delivery address. Please enter the complete delivery address, locality, and 6-digit PIN code for ${raw}:\n\n_Example: Warehouse 4B, Sanand GIDC, Ahmedabad, Gujarat - 382110_`,
+                buttons: [{ id: "btn_t2_back_to_options", text: "↩️ Choose Another Option" }],
+                step: "TERM_2_OTHER_INPUT"
+              };
+            }
+            sel.address = raw;
+            return {
+              sender: "purechain",
+              text: `⚠️ *Missing Information: 6-Digit PIN Code*\n\nDelivery address received: *${raw}*\n\nPlease enter the valid 6-digit PIN code for this location:`,
+              buttons: [{ id: "btn_t2_back_to_options", text: "↩️ Choose Another Option" }],
+              step: "TERM_2_OTHER_INPUT"
+            };
+          }
+
+          const pin = pinMatch[0];
+          const nonPinText = raw.replace(pin, '').replace(/[-–,]/g, ' ').trim();
+          const words = nonPinText.split(/\s+/).filter(w => w.length > 0 && !["pin", "pincode"].includes(w.toLowerCase()));
+
+          if (words.length <= 1) {
+            sel.pin_code = pin;
+            return {
+              sender: "purechain",
+              text: `⚠️ *Missing Information: Delivery Address*\n\nPIN code received: *${pin}*.\n\nPlease enter the complete delivery address (warehouse, street, locality, city and state):`,
+              buttons: [{ id: "btn_t2_back_to_options", text: "↩️ Choose Another Option" }],
+              step: "TERM_2_OTHER_INPUT"
+            };
+          }
+
+          const fullAddr = raw;
+          s.delivery_location = fullAddr;
+          s.delivery_location_details = {
+            selection_type: "other",
+            city: "Other",
+            state: "",
+            locality: words.join(' '),
+            address: fullAddr,
+            pin_code: pin,
+            full_address: fullAddr
+          };
+          s.terms.term_2 = fullAddr;
+          s.temp_delivery_selection = null;
+          this.syncRfqStore();
+          if (s.is_editing_term === 2) {
+            s.is_editing_term = null;
+            return this.renderBuyerRfqReview();
+          }
+          return this.renderTermQuestion3(s);
+        }
+
+        // Sub-case D: Direct entry on main menu
+        if (this.isDeliveryLocationComplete(raw)) {
+          const pin = (raw.match(/\b[1-9][0-9]{5}\b/))[0];
+          s.delivery_location = raw;
+          s.delivery_location_details = {
+            selection_type: "custom",
+            city: "Custom",
+            state: "",
+            locality: "",
+            address: raw,
+            pin_code: pin,
+            full_address: raw
+          };
+          s.terms.term_2 = raw;
+          this.syncRfqStore();
+          if (s.is_editing_term === 2) {
+            s.is_editing_term = null;
+            return this.renderBuyerRfqReview();
+          }
+          return this.renderTermQuestion3(s);
+        } else {
+          if (!pinMatch) {
+            return {
+              sender: "purechain",
+              text: `⚠️ *Missing Information: 6-Digit PIN Code*\n\nPlease enter a valid 6-digit PIN code along with the complete delivery address:`,
+              buttons: [
+                { id: "btn_t2_same_registered", text: "1️⃣ Same as registered office" },
+                { id: "btn_t2_city_pune", text: "2️⃣ Pune, Maharashtra" },
+                { id: "btn_t2_city_mumbai", text: "3️⃣ Mumbai, Maharashtra" },
+                { id: "btn_t2_city_nashik", text: "4️⃣ Nashik, Maharashtra" },
+                { id: "btn_t2_city_nagpur", text: "5️⃣ Nagpur, Maharashtra" },
+                { id: "btn_t2_other_location", text: "6️⃣ Other location" }
+              ],
+              step: "TERM_2"
+            };
+          } else {
+            return {
+              sender: "purechain",
+              text: `⚠️ *Missing Information: Delivery Address*\n\nA city name alone is not a complete delivery address. Please specify the actual delivery address or warehouse premises:`,
+              buttons: [
+                { id: "btn_t2_same_registered", text: "1️⃣ Same as registered office" },
+                { id: "btn_t2_city_pune", text: "2️⃣ Pune, Maharashtra" },
+                { id: "btn_t2_city_mumbai", text: "3️⃣ Mumbai, Maharashtra" },
+                { id: "btn_t2_city_nashik", text: "4️⃣ Nashik, Maharashtra" },
+                { id: "btn_t2_city_nagpur", text: "5️⃣ Nagpur, Maharashtra" },
+                { id: "btn_t2_other_location", text: "6️⃣ Other location" }
+              ],
+              step: "TERM_2"
+            };
+          }
+        }
       }
 
       if (s.is_editing_term === 2) {
@@ -1645,6 +2082,7 @@ class ProcurementEngine {
       unit: s.unit,
       technical_specs: s.technical_specs,
       delivery_location: s.terms.term_2 || s.delivery_location,
+      delivery_location_details: s.delivery_location_details || null,
       quotation_deadline: s.quotation_deadline,
       quote_validity: s.quote_validity,
       payment_terms: s.terms.term_3 || s.payment_terms,
@@ -1652,6 +2090,9 @@ class ProcurementEngine {
       terms_config: s.terms,
       buyer: {
         ...PROCUREMENT_DATA.buyer,
+        registered_office_address: s.registered_office_address || PROCUREMENT_DATA.buyer.registered_office_address,
+        registered_office_pin: s.registered_office_pin || PROCUREMENT_DATA.buyer.registered_office_pin,
+        delivery_address: s.terms.term_2 || s.delivery_location || PROCUREMENT_DATA.buyer.delivery_address,
         gstin: s.gstin,
         contact_name: s.contact_name,
         contact_phone: s.contact_phone,
@@ -1682,19 +2123,63 @@ class ProcurementEngine {
     };
   }
 
+  isDeliveryLocationComplete(locStr, details) {
+    if (!locStr || typeof locStr !== "string") return false;
+    const trimmed = locStr.trim();
+    if (!trimmed || trimmed === "Not specified" || trimmed.toLowerCase() === "null" || trimmed.toLowerCase() === "undefined") {
+      return false;
+    }
+
+    // 1. PIN code: Must match valid 6-digit Indian PIN: [1-9][0-9]{5}
+    const pinRegex = /\b[1-9][0-9]{5}\b/;
+    const pinMatch = trimmed.match(pinRegex);
+    if (!pinMatch) return false;
+
+    // 2. Reject city name alone (even if PIN or state is appended)
+    // E.g. "Pune", "Pune 411001", "Pune, Maharashtra", "Pune, Maharashtra - 411001", "Mumbai", "Nashik 422001"
+    const cleaned = trimmed
+      .replace(/\b[1-9][0-9]{5}\b/g, '')
+      .replace(/[-–,]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const knownCities = ["pune", "mumbai", "nashik", "nagpur", "delhi", "ahmedabad", "bangalore", "bengaluru", "hyderabad", "chennai", "kolkata"];
+    const knownStates = ["maharashtra", "gujarat", "karnataka", "delhi", "tamil nadu", "telangana", "west bengal", "india"];
+
+    const words = cleaned.split(' ').map(w => w.toLowerCase()).filter(w => w.length > 0 && !["pin", "pincode"].includes(w));
+    const nonGeoWords = words.filter(w => !knownCities.includes(w) && !knownStates.includes(w));
+
+    if (nonGeoWords.length === 0) {
+      return false;
+    }
+
+    return true;
+  }
+
   renderTermQuestion2(s) {
     s.step = "TERM_2";
     this.state.step = "TERM_2";
-    const editNotice = s.is_editing_term ? `\n\n_Current setting:_ *${s.terms.term_2 || 'Not specified'}*` : '';
+    let currentNotice = "";
+    if (s.delivery_location || (s.terms && s.terms.term_2)) {
+      const cur = s.terms.term_2 || s.delivery_location;
+      if (cur && cur !== "Not specified") {
+        currentNotice = `\n\n_Current confirmed delivery location:_\n📍 *${cur}*`;
+      }
+    }
     const buttons = [
-      { id: "btn_t2_skip", text: "⏭️ Skip for now" }
+      { id: "btn_t2_same_registered", text: "1️⃣ Same as registered office" },
+      { id: "btn_t2_city_pune", text: "2️⃣ Pune, Maharashtra" },
+      { id: "btn_t2_city_mumbai", text: "3️⃣ Mumbai, Maharashtra" },
+      { id: "btn_t2_city_nashik", text: "4️⃣ Nashik, Maharashtra" },
+      { id: "btn_t2_city_nagpur", text: "5️⃣ Nagpur, Maharashtra" },
+      { id: "btn_t2_other_location", text: "6️⃣ Other location" }
     ];
     if (s.is_editing_term) {
       buttons.push({ id: "btn_back_to_review", text: "↩️ Cancel & Back to Review" });
     }
     return {
       sender: "purechain",
-      text: `📍 *Term 2 of 8: Delivery Location*\n\nPlease enter the actual delivery location and PIN code where the consignment must be delivered.\n\n_(Note: Do not invent an address. Delivery destination is separate from registered office address)_` + editNotice + `\n\n_Please type the actual delivery address and PIN code below, or skip for now:_`,
+      text: `📍 *Term 2 of 8: Delivery Location*\n\nWhere should the consignment be delivered?\n\nPlease select one of the following options:` + currentNotice,
       buttons: buttons,
       step: "TERM_2"
     };
@@ -2010,6 +2495,22 @@ class ProcurementEngine {
           { id: "btn_buyer_check_status", text: "📊 Check Quotation Status" }
         ],
         step: "DISPATCH_CONFIRMED"
+      };
+    }
+
+    // Do not dispatch without complete delivery location
+    const currentLoc = s.delivery_location || (s.terms && s.terms.term_2);
+    if (!this.isDeliveryLocationComplete(currentLoc, s.delivery_location_details)) {
+      s.step = "MISSING_DELIVERY_LOCATION";
+      this.state.step = "MISSING_DELIVERY_LOCATION";
+
+      return {
+        sender: "purechain",
+        text: `⚠️ *Cannot Dispatch: Delivery Location Required*\n\nAn official RFQ requires a confirmed delivery destination with city, state, actual delivery address/locality, and a valid 6-digit PIN code.\n\nPlease select and configure the delivery location to proceed:`,
+        buttons: [
+          { id: "btn_edit_t2", text: "📍 Set Delivery Location" }
+        ],
+        step: "MISSING_DELIVERY_LOCATION"
       };
     }
 

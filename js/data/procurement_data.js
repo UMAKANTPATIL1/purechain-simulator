@@ -16,10 +16,15 @@ const PROCUREMENT_DATA = {
     short_name: "Apex Green Metals",
     role: "Buyer",
     plant_name: null,
-    location: null,
+    location: "Pune, Maharashtra",
     delivery_address: null,
-    registered_address: null,
-    state: null,
+    registered_office_address: "Plot No. 42, MIDC Industrial Area, Bhosari, Pune, Maharashtra - 411026",
+    registered_office_pin: "411026",
+    registered_office_city: "Pune",
+    registered_office_state: "Maharashtra",
+    registered_office_locality: "Bhosari MIDC",
+    registered_address: "Plot No. 42, MIDC Industrial Area, Bhosari, Pune, Maharashtra - 411026",
+    state: "Maharashtra",
     gstin: null,
     contact_name: "Procurement Desk",
     authorized_signatory: null,
@@ -365,6 +370,7 @@ const PROCUREMENT_DATA = {
       technical_specs: p.technical_specs || (this.materials[0] ? this.materials[0].specs_summary : ""),
       detailed_specs: this.materials[0] ? this.materials[0].specs : {},
       delivery_location: term2,
+      delivery_location_details: p.delivery_location_details || null,
       quotation_deadline: p.quotation_deadline || null,
       quote_validity: p.quote_validity || null,
       payment_terms: term3,
@@ -374,6 +380,10 @@ const PROCUREMENT_DATA = {
       selected_suppliers: [...this.shared_store.selected_supplier_ids],
       status: "DRAFT"
     };
+
+    if (term2 && term2 !== "Not specified") {
+      this.buyer.delivery_address = term2;
+    }
 
     this.shared_store.current_rfq = rfq;
     return rfq;
@@ -1215,9 +1225,9 @@ const PROCUREMENT_DATA = {
     const rfqLoc = (rfq && (rfq.delivery_location || (rfq.terms_config && rfq.terms_config.term_2)))
       ? (rfq.delivery_location || rfq.terms_config.term_2)
       : (this.buyer.delivery_address || "Not specified");
-    const delAddress = selectedQuote.delivery_address || rfqLoc;
+    const delAddress = (selectedQuote.delivery_address && selectedQuote.delivery_address !== "Not specified") ? selectedQuote.delivery_address : rfqLoc;
     let delPin = "Not specified";
-    const pinMatch = delAddress.match(/\b\d{6}\b/);
+    const pinMatch = delAddress.match(/\b[1-9][0-9]{5}\b/);
     if (pinMatch) delPin = pinMatch[0];
 
     const delContact = this.buyer.contact_name || "Procurement Desk";
